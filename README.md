@@ -4,7 +4,7 @@ This PCB and Software is used to create a board which communicates with your Dey
 
 <img src="img/board.svg">
 <img src="img/schematic.svg">
-<img src="img/3d.svg">
+<img src="img/3d.jpg">
 
 # Used Hardware
  - PCB (designed with easyeda and produced by jlcpcb)
