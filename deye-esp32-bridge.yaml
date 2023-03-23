@@ -5,15 +5,17 @@ esphome:
 
 logger:
   baud_rate: 0
+  level: INFO
 
 substitutions:
-  modbus_update_interval: "3s"
+  modbus_update_interval: "8s"
   settings_skipped_updates: "10"
   query_throttle: "50ms"
   device_name: deye
   device_type: sun10k
   device_description: "Esphome component for Deye sun-10k-sg04lp3"
   modbus_controller_id: sg04lp3
+  
 api:
 
 captive_portal:
@@ -55,6 +57,8 @@ time:
      - pool.ntp.org
     
 switch:
+  - platform: restart
+    name: "Restart ESP32-Deye Bridge"
   - platform: modbus_controller
     use_write_multiple: true
     modbus_controller_id: ${modbus_controller_id}
@@ -410,7 +414,7 @@ number:
     value_type: U_WORD
 
 sensor:
-  - platform: modbus_controller #køleplade temeratur
+  - platform: modbus_controller #${device_type}-køleplade temeratur
     modbus_controller_id: ${modbus_controller_id}
     name: "${device_type}-Heat sink temperature"
     id: ${device_type}_koleplade_temeratur
@@ -423,7 +427,7 @@ sensor:
       - offset: -1000
       - multiply:  0.1
  
-  - platform: modbus_controller #load frequency
+  - platform: modbus_controller #${device_type}-load frequency
     modbus_controller_id: ${modbus_controller_id}
     name: "${device_type}-load frequency"
     id: ${device_type}_load_frequency
@@ -436,7 +440,7 @@ sensor:
       - multiply: 0.01
     value_type: U_WORD
  
-  - platform: modbus_controller #inverter-frequency
+  - platform: modbus_controller #${device_type}-inverter-frequency
     modbus_controller_id: ${modbus_controller_id}
     name: "${device_type}-inverter-frequency"
     id: ${device_type}_inverter_frequency
