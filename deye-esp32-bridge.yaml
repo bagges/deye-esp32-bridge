@@ -414,6 +414,11 @@ number:
     value_type: U_WORD
 
 sensor:
+  - platform: template
+    name: "${device_type}-PV Total Power"
+    lambda: |-
+      return (int)((id(${device_type}_PV1_Power).state + id(${device_type}_PV2_Power).state));
+    update_interval: 5s
   - platform: modbus_controller #${device_type}-køleplade temeratur
     modbus_controller_id: ${modbus_controller_id}
     name: "${device_type}-Heat sink temperature"
