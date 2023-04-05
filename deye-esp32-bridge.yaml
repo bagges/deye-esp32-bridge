@@ -8,6 +8,7 @@ logger:
   level: INFO
 
 substitutions:
+  bms_name: seplos-bms
   modbus_update_interval: "8s"
   settings_skipped_updates: "10"
   query_throttle: "50ms"
@@ -15,29 +16,52 @@ substitutions:
   device_type: sun10k
   device_description: "Esphome component for Deye sun-10k-sg04lp3"
   modbus_controller_id: sg04lp3
+  external_components_source: github://syssi/esphome-seplos-bms@main
   
 api:
 
 captive_portal:
 
+external_components:
+  - source: ${external_components_source}
+    refresh: 0s
+
 uart:
- id: mod_bus
- tx_pin: 1
- rx_pin: 3
- baud_rate: 9600
- stop_bits: 1
+  - id: uartdeye
+    tx_pin: 1
+    rx_pin: 3
+    baud_rate: 9600
+  - id: uartseplos
+    tx_pin: 15
+    rx_pin: 13
+    baud_rate: 19200
+    rx_buffer_size: 384
 
 modbus_controller:
- - id: ${modbus_controller_id}
-   address: 0x01
-   modbus_id: modbus1
-   setup_priority: -10
-   update_interval: ${modbus_update_interval}
-   command_throttle: ${query_throttle}
-   
+  - id: ${modbus_controller_id}
+    address: 0x01
+    modbus_id: modbus1
+    setup_priority: -10
+    update_interval: ${modbus_update_interval}
+    command_throttle: ${query_throttle}
+
+seplos_bms:
+  id: bms0
+  address: 0x00
+  protocol_version: 0x20
+  seplos_modbus_id: modbus0
+  update_interval: 25s
+
+seplos_modbus:
+  id: modbus0
+  uart_id: uartseplos
+  rx_timeout: 150ms
+  flow_control_pin: 4
+  
 modbus:
- id: modbus1
- flow_control_pin: 5
+  id: modbus1
+  uart_id: uartdeye
+  flow_control_pin: 5
 
 ota:
   password: ""
@@ -50,11 +74,11 @@ web_server:
   port: 80
 
 time:
-   - platform: sntp
-     id: sntp_time
-     timezone: Europe/Berlin
-     servers:
-     - pool.ntp.org
+  - platform: sntp
+    id: sntp_time
+    timezone: Europe/Berlin
+    servers:
+    - pool.ntp.org
     
 switch:
   - platform: restart
@@ -1038,3 +1062,85 @@ sensor:
     state_class: "measurement"
     accuracy_decimals: 0
     value_type: U_WORD
+    
+  - platform: seplos_bms
+    min_cell_voltage:
+      name: "${bms_name} min cell voltage"
+    max_cell_voltage:
+      name: "${bms_name} max cell voltage"
+    min_voltage_cell:
+      name: "${bms_name} min voltage cell"
+    max_voltage_cell:
+      name: "${bms_name} max voltage cell"
+    delta_cell_voltage:
+      name: "${bms_name} delta cell voltage"
+    average_cell_voltage:
+      name: "${bms_name} average cell voltage"
+    cell_voltage_1:
+      name: "${bms_name} cell voltage 1"
+    cell_voltage_2:
+      name: "${bms_name} cell voltage 2"
+    cell_voltage_3:
+      name: "${bms_name} cell voltage 3"
+    cell_voltage_4:
+      name: "${bms_name} cell voltage 4"
+    cell_voltage_5:
+      name: "${bms_name} cell voltage 5"
+    cell_voltage_6:
+      name: "${bms_name} cell voltage 6"
+    cell_voltage_7:
+      name: "${bms_name} cell voltage 7"
+    cell_voltage_8:
+      name: "${bms_name} cell voltage 8"
+    cell_voltage_9:
+      name: "${bms_name} cell voltage 9"
+    cell_voltage_10:
+      name: "${bms_name} cell voltage 10"
+    cell_voltage_11:
+      name: "${bms_name} cell voltage 11"
+    cell_voltage_12:
+      name: "${bms_name} cell voltage 12"
+    cell_voltage_13:
+      name: "${bms_name} cell voltage 13"
+    cell_voltage_14:
+      name: "${bms_name} cell voltage 14"
+    cell_voltage_15:
+      name: "${bms_name} cell voltage 15"
+    cell_voltage_16:
+      name: "${bms_name} cell voltage 16"
+    temperature_1:
+      name: "${bms_name} temperature 1"
+    temperature_2:
+      name: "${bms_name} temperature 2"
+    temperature_3:
+      name: "${bms_name} temperature 3"
+    temperature_4:
+      name: "${bms_name} temperature 4"
+    temperature_5:
+      name: "${bms_name} environment temperature"
+    temperature_6:
+      name: "${bms_name} mosfet temperature"
+    total_voltage:
+      name: "${bms_name} total voltage"
+    current:
+      name: "${bms_name} current"
+    power:
+      name: "${bms_name} power"
+    charging_power:
+      name: "${bms_name} charging power"
+    discharging_power:
+      name: "${bms_name} discharging power"
+    residual_capacity:
+      name: "${bms_name} residual capacity"
+    battery_capacity:
+      name: "${bms_name} battery capacity"
+    rated_capacity:
+      name: "${bms_name} rated capacity"
+    state_of_charge:
+      name: "${bms_name} state of charge"
+    charging_cycles:
+      name: "${bms_name} charging cycles"
+    state_of_health:
+      name: "${bms_name} state of health"
+    port_voltage:
+      name: "${bms_name} port voltage"
