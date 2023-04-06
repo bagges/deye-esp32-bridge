@@ -5,7 +5,7 @@ esphome:
 
 logger:
   baud_rate: 0
-  level: INFO
+  level: DEBUG
 
 substitutions:
   bms_name: seplos-bms
@@ -36,6 +36,7 @@ uart:
     rx_pin: 13
     baud_rate: 19200
     rx_buffer_size: 384
+    debug:
 
 modbus_controller:
   - id: ${modbus_controller_id}
