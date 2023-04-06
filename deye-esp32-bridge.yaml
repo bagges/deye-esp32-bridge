@@ -16,7 +16,7 @@ substitutions:
   device_type: sun10k
   device_description: "Esphome component for Deye sun-10k-sg04lp3"
   modbus_controller_id: sg04lp3
-  external_components_source: github://syssi/esphome-seplos-bms@main
+  external_components_source: github://syssi/esphome-seplos-bms@debug-decoder
   
 api:
 
