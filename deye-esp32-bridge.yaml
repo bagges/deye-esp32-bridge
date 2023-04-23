@@ -4,7 +4,6 @@ esphome:
   board: nodemcu-32s
 
 logger:
-  baud_rate: 0
   level: DEBUG
 
 substitutions:
@@ -16,7 +15,7 @@ substitutions:
   device_type: sun10k
   device_description: "Esphome component for Deye sun-10k-sg04lp3"
   modbus_controller_id: sg04lp3
-  external_components_source: github://syssi/esphome-seplos-bms@debug-decoder
+  external_components_source: github://syssi/esphome-seplos-bms@main
   
 api:
 
@@ -28,12 +27,12 @@ external_components:
 
 uart:
   - id: uartdeye
-    tx_pin: 1
-    rx_pin: 3
+    tx_pin: 27
+    rx_pin: 26
     baud_rate: 9600
   - id: uartseplos
-    tx_pin: 15
-    rx_pin: 13
+    tx_pin: 17
+    rx_pin: 16
     baud_rate: 19200
     rx_buffer_size: 384
     debug:
@@ -51,18 +50,16 @@ seplos_bms:
   address: 0x00
   protocol_version: 0x20
   seplos_modbus_id: modbus0
-  update_interval: 25s
+  update_interval: 10s
 
 seplos_modbus:
   id: modbus0
   uart_id: uartseplos
   rx_timeout: 150ms
-  flow_control_pin: 4
-  
+
 modbus:
   id: modbus1
   uart_id: uartdeye
-  flow_control_pin: 5
 
 ota:
   password: ""
@@ -1010,7 +1007,7 @@ sensor:
     name: "${device_type}-battery voltage"
     id: ${device_type}_battery_voltage
     register_type: holding
-    address: 587  
+    address: 587
     unit_of_measurement: "V"
     state_class: "measurement"
     accuracy_decimals: 2
