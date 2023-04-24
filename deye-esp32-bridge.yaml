@@ -4,7 +4,7 @@ esphome:
   board: nodemcu-32s
 
 logger:
-  level: DEBUG
+  level: INFO
 
 substitutions:
   bms_name: seplos-bms
