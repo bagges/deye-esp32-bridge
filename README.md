@@ -36,6 +36,10 @@ On my boards it was labled with R13.
 # Software
  - The esphome configuration file for deye is based on the work of klatremis (https://github.com/klatremis/esphome-for-deye)
  - The esphome configuration file for seplos is based on the work of syssi (https://github.com/syssi/esphome-seplos-bms)
+
+# Current Issues
+
+Seplos BMS connection does drop after a few hours. I still have no clue why this is happening...
  
 # Disclaimer
 
