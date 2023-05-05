@@ -433,6 +433,7 @@ number:
     address: 171
     min_value: 0
     max_value: 100
+    step: 5
     value_type: U_WORD
 
 sensor:
