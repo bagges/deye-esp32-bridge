@@ -12,6 +12,7 @@ This PCB and Software is used to create a board which communicates with your Dey
  - [2x RS485 Serial Converter](https://amzn.to/3L1OmBq)
  - [DC/DC Step Down Module](https://amzn.to/3oFFiur)
  - [3x RJ45 connectors](https://amzn.to/3AqmPo8)
+ - [12V din rail power supply](https://amzn.to/3VNIEYH)
 
 # Prepare RS485 Serial Converter
 Make sure that your RS485 converter is terminated by about 120R. 
