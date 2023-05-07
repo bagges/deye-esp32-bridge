@@ -27,7 +27,7 @@ On my boards it was labled with R13.
  - Connect your PC to the micro USB and run: ```esphome run deye-esp32-bridge.yaml```
 
 # Wiring
- - Connect any 7-24V DC source to the screw headers (CN2 PINS 7+8 from deye inverter will work). Make sure that JP2 is closed.
+ - Connect any 7-24V DC source to the screw headers (do not use CN2 PINS 7+8 from deye inverter, they only work for about 100mA). Make sure that JP2 is closed.
  - As an alternative you can connect directly to the USB of the ESP32. Make sure that JP2 is not closed.
  - Connect your inverters BMS RJ45 to the CAN IN RJ45 of the PCB.
  - If you want to connect your inverter and BMS via CAN. connect your BMS to the BMS IN RJ45 of the PCB.
@@ -36,10 +36,6 @@ On my boards it was labled with R13.
 # Software
  - The esphome configuration file for deye is based on the work of klatremis (https://github.com/klatremis/esphome-for-deye)
  - The esphome configuration file for seplos is based on the work of syssi (https://github.com/syssi/esphome-seplos-bms)
-
-# Current Issues
-
-Seplos BMS connection does drop after a few hours. I still have no clue why this is happening...
  
 # Disclaimer
 
