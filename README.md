@@ -32,6 +32,7 @@ On my boards it was labled with R13.
  - Connect your inverters BMS RJ45 to the CAN IN RJ45 of the PCB.
  - If you want to connect your inverter and BMS via CAN. connect your BMS to the BMS IN RJ45 of the PCB.
  - Connect your Seplos BMS to RJ3
+ - I used RJ45 cables without shield connected to the RJ45 connector
  
 # Software
  - The esphome configuration file for deye is based on the work of klatremis (https://github.com/klatremis/esphome-for-deye)
