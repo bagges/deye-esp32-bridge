@@ -238,6 +238,45 @@ number:
   - platform: modbus_controller
     use_write_multiple: true
     modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Battery_equalization_voltage
+    name: "${device_type}-Battery equalization voltage"
+    address: 99
+    unit_of_measurement: V
+    value_type: U_WORD
+    max_value: 55.4
+    min_value: 53.0
+    step: 0.1
+    lambda: "return x * 0.01;"
+    write_lambda: "return x * 100;"
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Battery_absorption_voltage
+    name: "${device_type}-Battery absorption voltage"
+    address: 100
+    unit_of_measurement: V
+    value_type: U_WORD
+    max_value: 57.6
+    min_value: 53.0
+    step: 0.1
+    lambda: "return x * 0.01;"
+    write_lambda: "return x * 100;"
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Battery_float_voltage
+    name: "${device_type}-Battery float voltage"
+    address: 101
+    unit_of_measurement: V
+    value_type: U_WORD
+    max_value: 55.4
+    min_value: 53.0
+    step: 0.1
+    lambda: "return x * 0.01;"
+    write_lambda: "return x * 100;"
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
     id: ${device_type}_Maximum_battery_charge_current
     name: "${device_type}-Maximum battery charge current"
     address: 108
