@@ -1,3 +1,5 @@
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/bagges?country.x=DE&locale.x=de_DE)
+
 # deye-esp32-bridge
 
 This PCB and Software is used to create a board which communicates with your Deye/Sunsynk inverter and also Seplos BMS.
