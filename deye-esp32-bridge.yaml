@@ -246,6 +246,7 @@ number:
     max_value: 55.4
     min_value: 53.0
     step: 0.1
+    mode: box
     lambda: "return x * 0.01;"
     write_lambda: "return x * 100;"
   - platform: modbus_controller
@@ -259,6 +260,7 @@ number:
     max_value: 57.6
     min_value: 53.0
     step: 0.1
+    mode: box
     lambda: "return x * 0.01;"
     write_lambda: "return x * 100;"
   - platform: modbus_controller
@@ -272,6 +274,7 @@ number:
     max_value: 55.4
     min_value: 53.0
     step: 0.1
+    mode: box
     lambda: "return x * 0.01;"
     write_lambda: "return x * 100;"
   - platform: modbus_controller
