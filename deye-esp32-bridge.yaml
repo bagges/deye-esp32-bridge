@@ -409,74 +409,167 @@ number:
   - platform: modbus_controller
     use_write_multiple: true
     modbus_controller_id: ${modbus_controller_id}
-    id: ${device_type}_Time_point_1_capacity
-    name: "${device_type}-Time point 1 capacity"
-    unit_of_measurement: "%"
-    address: 166
-    min_value: 0
-    max_value: 100
-    step: 5
+    id: ${device_type}_Time_point_1_volts
+    name: "${device_type}-Time point 1 volts"
+    unit_of_measurement: V
+    address: 160
+    min_value: 38
+    max_value: 57.6
+    step: 0.1
+    mode: box
+    lambda: "return x * 0.01;"
+    write_lambda: "return x * 100;"
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_2_volts
+    name: "${device_type}-Time point 2 volts"
+    unit_of_measurement: V
+    address: 161
+    min_value: 38
+    max_value: 57.6
+    step: 0.1
+    mode: box
+    lambda: "return x * 0.01;"
+    write_lambda: "return x * 100;"
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_3_volts
+    name: "${device_type}-Time point 3 volts"
+    unit_of_measurement: V
+    address: 162
+    min_value: 38
+    max_value: 57.6
+    step: 0.1
+    mode: box
+    lambda: "return x * 0.01;"
+    write_lambda: "return x * 100;"
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_4_volts
+    name: "${device_type}-Time point 4 volts"
+    unit_of_measurement: V
+    address: 163
+    min_value: 38
+    max_value: 57.6
+    step: 0.1
+    mode: box
+    lambda: "return x * 0.01;"
+    write_lambda: "return x * 100;"
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_5_volts
+    name: "${device_type}-Time point 5 volts"
+    unit_of_measurement: V
+    address: 164
+    min_value: 38
+    max_value: 57.6
+    step: 0.1
+    mode: box
+    lambda: "return x * 0.01;"
+    write_lambda: "return x * 100;"
     value_type: U_WORD
     
   - platform: modbus_controller
     use_write_multiple: true
     modbus_controller_id: ${modbus_controller_id}
-    id: ${device_type}_Time_point_2_capacity
-    name: "${device_type}-Time point 2 capacity"
-    unit_of_measurement: "%"
-    address: 167
-    min_value: 0
-    max_value: 100
-    step: 5
+    id: ${device_type}_Time_point_6_volts
+    name: "${device_type}-Time point 6 volts"
+    unit_of_measurement: V
+    address: 165
+    min_value: 38
+    max_value: 57.6
+    step: 0.1
+    mode: box
+    lambda: "return x * 0.01;"
+    write_lambda: "return x * 100;"
     value_type: U_WORD
-    
-  - platform: modbus_controller
-    use_write_multiple: true
-    modbus_controller_id: ${modbus_controller_id}
-    id: ${device_type}_Time_point_3_capacity
-    name: "${device_type}-Time point 3 capacity"
-    unit_of_measurement: "%"
-    address: 168
-    min_value: 0
-    max_value: 100
-    step: 5
-    value_type: U_WORD
-    
-  - platform: modbus_controller
-    use_write_multiple: true
-    modbus_controller_id: ${modbus_controller_id}
-    id: ${device_type}_Time_point_4_capacity
-    name: "${device_type}-Time point 4 capacity"
-    unit_of_measurement: "%"
-    address: 169
-    min_value: 0
-    max_value: 100
-    step: 5
-    value_type: U_WORD
-    
-  - platform: modbus_controller
-    use_write_multiple: true
-    modbus_controller_id: ${modbus_controller_id}
-    id: ${device_type}_Time_point_5_capacity
-    name: "${device_type}-Time point 5 capacity"
-    unit_of_measurement: "%"
-    address: 170
-    min_value: 0
-    max_value: 100
-    step: 5
-    value_type: U_WORD
-    
-  - platform: modbus_controller
-    use_write_multiple: true
-    modbus_controller_id: ${modbus_controller_id}
-    id: ${device_type}_Time_point_6_capacity
-    name: "${device_type}-Time point 6 capacity"
-    unit_of_measurement: "%"
-    address: 171
-    min_value: 0
-    max_value: 100
-    step: 5
-    value_type: U_WORD
+
+#######
+# NEEDED IF YOU USE Lithium or Bat%
+#######    
+#  - platform: modbus_controller
+#    use_write_multiple: true
+#    modbus_controller_id: ${modbus_controller_id}
+#    id: ${device_type}_Time_point_1_capacity
+#    name: "${device_type}-Time point 1 capacity"
+#    unit_of_measurement: "%"
+#    address: 166
+#    min_value: 0
+#    max_value: 100
+#    step: 5
+#    value_type: U_WORD
+#    
+#  - platform: modbus_controller
+#    use_write_multiple: true
+#    modbus_controller_id: ${modbus_controller_id}
+#    id: ${device_type}_Time_point_2_capacity
+#    name: "${device_type}-Time point 2 capacity"
+#    unit_of_measurement: "%"
+#    address: 167
+#    min_value: 0
+#    max_value: 100
+#    step: 5
+#    value_type: U_WORD
+#    
+#  - platform: modbus_controller
+#    use_write_multiple: true
+#    modbus_controller_id: ${modbus_controller_id}
+#    id: ${device_type}_Time_point_3_capacity
+#    name: "${device_type}-Time point 3 capacity"
+#    unit_of_measurement: "%"
+#    address: 168
+#    min_value: 0
+#    max_value: 100
+#    step: 5
+#    value_type: U_WORD
+#    
+#  - platform: modbus_controller
+#    use_write_multiple: true
+#    modbus_controller_id: ${modbus_controller_id}
+#    id: ${device_type}_Time_point_4_capacity
+#    name: "${device_type}-Time point 4 capacity"
+#    unit_of_measurement: "%"
+#    address: 169
+#    min_value: 0
+#    max_value: 100
+#    step: 5
+#    value_type: U_WORD
+#    
+#  - platform: modbus_controller
+#    use_write_multiple: true
+#    modbus_controller_id: ${modbus_controller_id}
+#    id: ${device_type}_Time_point_5_capacity
+#    name: "${device_type}-Time point 5 capacity"
+#    unit_of_measurement: "%"
+#    address: 170
+#    min_value: 0
+#    max_value: 100
+#    step: 5
+#    value_type: U_WORD
+#    
+#  - platform: modbus_controller
+#    use_write_multiple: true
+#    modbus_controller_id: ${modbus_controller_id}
+#    id: ${device_type}_Time_point_6_capacity
+#    name: "${device_type}-Time point 6 capacity"
+#    unit_of_measurement: "%"
+#    address: 171
+#    min_value: 0
+#    max_value: 100
+#    step: 5
+#    value_type: U_WORD
 
 sensor:
   - platform: template
