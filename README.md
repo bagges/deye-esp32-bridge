@@ -2,7 +2,7 @@
 
 # deye-esp32-bridge
 
-This PCB and Software is used to create a board which communicates with your Deye/Sunsynk inverter and also Seplos BMS.
+This PCB and Software is used to create a board which communicates with your Deye/Sunsynk inverter and also the BMS of your battery (SeplosBMS and PaceBMS are supported for now).
 
 <img src="img/board.svg">
 <img src="img/schematic.svg">
