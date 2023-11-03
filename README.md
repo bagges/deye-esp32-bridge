@@ -46,6 +46,9 @@ On my boards it was labled with R13.
 | JP5       | If closed, connects GND from the BMS to GND of the PCB |
 | U2        | Additional general purpose I/O / GND / 5V / 3V3        |
 | R1        | Optional resistor, needed if connecting DS18B20 to U4  |
+| RJ1       | Connects to the BMS port of Deye                       |
+| RJ2       | Connects to the CAN Port of the BMS                    |
+| RJ3       | Connects to the RS485 Port of the BMS                  |
 
  
 # Software
