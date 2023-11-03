@@ -36,6 +36,17 @@ On my boards it was labled with R13.
  - If you want to connect your inverter and BMS via CAN. connect your BMS to the BMS IN RJ45 of the PCB.
  - Connect your Seplos BMS to RJ3
  - I used RJ45 cables without shield connected to the RJ45 connector
+
+## Component Description
+| Component | Function |
+|-----------|--------------------------------------------------------|
+| JP1       | If closed, connects GND from Deye to GND of the BMS    |
+| JP2       | If closed, connects the DCDC Converter to the ESP32    |
+| JP4       | If closed, connects GND from Deye to GND of the PCB    |
+| JP5       | If closed, connects GND from the BMS to GND of the PCB |
+| U2        | Additional general purpose I/O / GND / 5V / 3V3        |
+| R1        | Optional resistor, needed if connecting DS18B20 to U4  |
+
  
 # Software
  - The esphome configuration file for deye is based on the work of klatremis (https://github.com/klatremis/esphome-for-deye)
