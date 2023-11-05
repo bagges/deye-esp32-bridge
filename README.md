@@ -1,73 +1,27 @@
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/bagges?country.x=DE&locale.x=de_DE)
+# Modified 3D Printed Case
 
-# deye-esp32-bridge
+I had a few changes that i wanted to do to the Case so i turned the stl's of the existing case into CAD files and made a few changes that some might like aswell and i think having options is better then not having them :D. So here you go. Below are some Pictures.
 
-This PCB and Software is used to create a board which communicates with your Deye/Sunsynk inverter and also the BMS of your battery (SeplosBMS and PaceBMS are supported for now).
+### Changes to the Bottom of the Case
+The PCB's that I ordered were 2mm thick instead of the Standard ~1.5mm. So i adjusted the depth where the pcb sits in to accomodate the 2mm thick PCB's.
 
-<img src="img/board.svg">
-<img src="img/schematic.svg">
-<img src="img/3d.jpg">
+Additionally I like to use Heatset inserts instead of screwing into the plastic, but the previous holes were only 4mm. So i adjusted them to 4.7mm which is the perfect size for M3 Heatsets when printed in ABS. Should still work for PLA and other Materials.
+### Changes to the Top of the Case
+There was not really anything that needed changing, but I was not a fan of the MARK 4 Label and i wanted to lable the diffrent ports instead. So that's what i did, I added lables for the 3 Rj45 Ports, the Temperature sensor, + and - for the power Terminal aswell as a USB logo for the USB port of the ESP32.
+To Fit the Lables a bit better, I made the cutouts for the screw Terminals a little bit smaller. Everything is still accessible.
 
-# BOM
- - PCB (designed with easyeda and produced by jlcpcb)
- - [AZDelivery ESP32 Dev v4](https://amzn.to/41Sd0v4)
- - [2x RS485 Serial Converter](https://amzn.to/3L1OmBq)
- - [DC/DC Step Down Module](https://amzn.to/3oFFiur)
- - [3x RJ45 connectors](https://amzn.to/3AqmPo8)
- - [12V din rail power supply](https://amzn.to/3VNIEYH)
+You have a few options of how to print this:
+- Print only the 'top_with_labels.stl' and have the lables engraved into the printed piece
+- Print it in multiple colors by importing all the stl files from the Folder 'Top_with_lables' at the same time and selecting 'yes' when asked if you want to import all the files as a Single Object with multiple Parts. If you do this, the logos will be automatically placed in the engraved parts of the case. If you do not do this, the logos will all just be put into the center of the slicer. (only works when the slicer is setup for Multi color Printing, otherwise it does not ask the question)
+- Print it in multiple colors by using the file 'top_with_labels_multicolor_split_to_parts.stl' from the 'Single_multicolor_file' Folder and right clicking it in the Slicer and click 'split to multiple parts' and coloring each file as you like.
 
-# Prepare RS485 Serial Converter
-Make sure that your RS485 converter is terminated by about 120R. 
-Measure the resistance between B- and A+. Should be something between 110-130 Ohms. 
-If you cannot measure any resistance, you need to shorten the the two small pins next to the B- connector. 
-On my boards it was labled with R13.
+I made a Picture as an example, with alot of colors, i only printed it in Black with green Logos, but you can customize or print in whatever combination of colors as you like.
 
-# Deye Setup
- - Goto Advanced Function and set to Slave and Modbus SN 01
+### Multicolor
+<img src="img/top_with_lables_multicolor.png">
 
-# Flash ESP32
- - Adapt your wifi settings in the secrets.yaml
- - Connect your PC to the micro USB and run: ```esphome run deye-esp32-bridge.yaml```
+### No Color, just engraved
+<img src="img/top_with_lables_engraved.png">
 
-# Wiring
- - Connect any 7-24V DC source to the screw headers (do not use CN2 PINS 7+8 from deye inverter, they only work for about 100mA). Make sure that JP2 is closed.
- - As an alternative you can connect directly to the USB of the ESP32. Make sure that JP2 is not closed. This method makes often problems with the RS485 connection.
- - Connect your inverters BMS RJ45 to the CAN IN RJ45 of the PCB.
- - If you want to connect your inverter and BMS via CAN. connect your BMS to the BMS IN RJ45 of the PCB.
- - Connect your Seplos BMS to RJ3
- - I used RJ45 cables without shield connected to the RJ45 connector
-
-## Component Description
-| Component | Function |
-|-----------|--------------------------------------------------------|
-| JP1       | If closed, connects GND from Deye to GND of the BMS    |
-| JP2       | If closed, connects the DCDC Converter to the ESP32    |
-| JP4       | If closed, connects GND from Deye to GND of the PCB    |
-| JP5       | If closed, connects GND from the BMS to GND of the PCB |
-| U2        | Additional general purpose I/O / GND / 5V / 3V3        |
-| R1        | Optional resistor, needed if connecting DS18B20 to U4  |
-| RJ1       | Connects to the BMS port of Deye                       |
-| RJ2       | Connects to the CAN Port of the BMS                    |
-| RJ3       | Connects to the RS485 Port of the BMS                  |
-
- 
-# Software
- - The esphome configuration file for deye is based on the work of klatremis (https://github.com/klatremis/esphome-for-deye)
- - The esphome configuration file for seplos is based on the work of syssi (https://github.com/syssi/esphome-seplos-bms)
- 
-# Disclaimer
-
-This repository contains files for demonstration purposes only. Use the files on your own risk. I am not responsible for any damage!
-
-# License
-
-Shield: [![CC BY-NC-SA 4.0][cc-by-nc-sa-shield]][cc-by-nc-sa]
-
-This work is licensed under a
-[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License][cc-by-nc-sa].
-
-[![CC BY-NC-SA 4.0][cc-by-nc-sa-image]][cc-by-nc-sa]
-
-[cc-by-nc-sa]: http://creativecommons.org/licenses/by-nc-sa/4.0/
-[cc-by-nc-sa-image]: https://licensebuttons.net/l/by-nc-sa/4.0/88x31.png
-[cc-by-nc-sa-shield]: https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg
+##### Case modified by:
+- [xF4m3](https://github.com/xF4m3 "xF4m3")
