@@ -18,10 +18,10 @@ You have a few options of how to print this:
 I made a Picture as an example, with alot of colors, i only printed it in Black with green Logos, but you can customize or print in whatever combination of colors as you like.
 
 ### Multicolor
-<img src="img/top_with_lables_multicolor.png">
+<img src="../img/top_with_lables_multicolor.png">
 
 ### No Color, just engraved
-<img src="img/top_with_lables_engraved.png">
+<img src="../img/top_with_lables_engraved.png">
 
 ##### Case modified by:
 - [xF4m3](https://github.com/xF4m3 "xF4m3")
