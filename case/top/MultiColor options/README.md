@@ -1,0 +1,5 @@
+# MultiColor with Multiple Files
+
+Stl's in this folder are all the Text and Logos. To use them you also need the top.stl fle together with all the stl's in this folder. Below is a description of how to do the Multicolored print.
+
+- Print it in multiple colors by importing all the stl files from this folder aswell as the "top.stl" file from a folder higher up at the same time and selecting 'yes' when asked if you want to import all the files as a Single Object with multiple Parts. If you do this, the logos will be automatically placed in the engraved parts of the case. If you do not do this, the logos will all just be put into the center of the slicer and aligning will be difficult. (this only works when the slicer is setup for Multi color Printing, otherwise it does not ask the question). This way you can give each of the Lables a diffrent color, i find this the best option to use myself.
