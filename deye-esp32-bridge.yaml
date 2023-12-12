@@ -574,6 +574,9 @@ number:
 sensor:
   - platform: template
     name: "${device_type}-PV Total Power"
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
     lambda: |-
       return (int)((id(${device_type}_PV1_Power).state + id(${device_type}_PV2_Power).state));
     update_interval: 5s
