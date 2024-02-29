@@ -10,8 +10,7 @@ globals:
    - id: helper_discharge_current
      type: int
      restore_value: yes
-     initial_value: '0'
-     
+     initial_value: '100'
 substitutions:
   bms_name: seplos-bms
   modbus_update_interval: "8s"
@@ -96,18 +95,21 @@ select:
     optimistic: true
     on_value:
       then:
-        - lambda: |-
-            if (id(batterymode).state == "Normal") {
-              ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Normal", abs(id(helper_discharge_current)));
-              id(${device_type}_Maximum_battery_discharge_current).publish_state(abs(id(helper_discharge_current)));
-              //set ${device_type}_Maximum_battery_discharge_current to abs(id(helper_discharge_current))
-            } else if (id(batterymode).state == "Hold") {
-              ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Hold", 0);
-              id(${device_type}_Maximum_battery_discharge_current).publish_state(0);
-              //set ${device_type}_Maximum_battery_discharge_current to 0
-            } else if (id(batterymode).state == "Charge") {
-              ESP_LOGD("Battery Mode", "Charge selected, not implemented!");
-            }
+        - number.set:
+            id: ${device_type}_Maximum_battery_discharge_current
+            value: !lambda |-
+              if (id(batterymode).state == "Normal") {
+                ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Normal", abs(id(helper_discharge_current)));
+                return abs(id(helper_discharge_current));
+              } else if (id(batterymode).state == "Hold") {
+                ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Hold", 0);
+                return 0;
+              } else if (id(batterymode).state == "Charge") {
+                return abs(id(helper_discharge_current));
+                ESP_LOGD("Battery Mode", "Charge selected, not implemented!");
+              }
+              return 0;
+# curl -X POST -d "" "http://esp32-sandbox.local/select/batterymode/set?option=Hold"
 switch:
   - platform: restart
     name: "Restart ESP32-Deye Bridge"
@@ -333,6 +335,8 @@ number:
             value: !lambda |-
               if(x > 0) {
                 return (int)x;
+              } else if (x == 0) {
+                return id(helper_discharge_current);
               } else {
                 return id(helper_discharge_current)*-1;
               }
