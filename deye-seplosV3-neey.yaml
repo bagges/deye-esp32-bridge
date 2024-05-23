@@ -1,0 +1,2053 @@
+esphome:
+  name: deye-seplos-neey
+  friendly_name: deye-seplos-neey
+
+esp32:
+  board: az-delivery-devkit-v4
+  framework:
+    type: esp-idf
+  
+substitutions:
+  bms_name: seplos-bms
+  balancer_name: neey-balancer
+  modbus_update_interval: "10s"
+  settings_skipped_updates: "10"
+  query_throttle: "50ms"
+  device_name: deye
+  device_type: sun10k
+  device_description: "Esphome component for Deye sun-10k-sg04lp3"
+  modbus_controller_id: sg04lp3
+  external_components_source1: github://syssi/esphome-seplos-bms@main
+#  external_components_source2: github://syssi/esphome-jk-bms@main
+  mac_address: 3C:A5:51:96:FF:FF
+
+
+
+# Enable logging
+logger:
+  level: INFO
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "..."
+
+ota:
+  password: "..."
+#  on_begin:
+#    then:
+#      - switch.turn_off: ble_client_switch0
+#      - logger.log: "BLE connection suspended for OTA update"
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+#  ap:
+#    ssid: "Deye-Seplos-Neey"
+#    password: "kL3kAio4DeDb"
+
+#mqtt:
+#  broker: 192.168.1.1
+#  port: 1883
+#  topic_prefix: deye10k
+#  username: username
+#  password: password
+
+#web_server:
+#  port: 80
+#  ota: False  
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: Europe/Berlin
+    servers:
+    - pool.ntp.org
+
+
+captive_portal:
+    
+external_components:
+  - source: ${external_components_source1}
+    refresh: 0s
+#  - source: ${external_components_source2}
+#    refresh: 0s
+
+#esp32_ble_tracker:
+#  on_ble_advertise:
+#    then:
+#      - lambda: |-
+#          if (x.get_name().rfind("GW-", 0) == 0) {
+#            ESP_LOGI("ble_adv", "New Heltec/NEEY balancer found");
+#            ESP_LOGI("ble_adv", "  Name: %s", x.get_name().c_str());
+#            ESP_LOGI("ble_adv", "  MAC address: %s", x.address_str().c_str());
+#            ESP_LOGD("ble_adv", "  Advertised service UUIDs:");
+#            for (auto uuid : x.get_service_uuids()) {
+#              ESP_LOGD("ble_adv", "    - %s", uuid.to_string().c_str());
+#            }
+#          }
+
+#ble_client:
+#  - mac_address: ${mac_address}
+#    id: client0
+
+#heltec_balancer_ble:
+#  - ble_client_id: client0
+#    throttle: 5s
+#    id: bms1
+
+#interval:
+#  - interval: 30min
+#    then:
+#      - button.press: retrieve_settings_button
+
+
+uart:
+  - id: uartdeye
+    tx_pin: 27
+    rx_pin: 26
+    baud_rate: 9600
+  - id: uartseplos
+    tx_pin: 17
+    rx_pin: 16
+    baud_rate: 19200
+#    rx_buffer_size: 384
+    debug:
+      direction: BOTH
+      dummy_receiver: false
+
+
+modbus_controller:
+  - id: ${modbus_controller_id}
+    address: 0x01
+    modbus_id: modbus1
+    setup_priority: -10
+    update_interval: ${modbus_update_interval}
+    command_throttle: ${query_throttle}
+  - id: bms0
+    address: 0x00
+    modbus_id: modbus0
+    command_throttle: 200ms
+    update_interval: 10s
+ 
+
+ 
+modbus:
+  - id: modbus1
+    uart_id: uartdeye
+  - id: modbus0
+    uart_id: uartseplos
+    send_wait_time: 200ms
+
+
+sensor:
+#  - platform: heltec_balancer_ble
+#    min_cell_voltage:
+#      name: "${balancer_name} min cell voltage"
+#    max_cell_voltage:
+#      name: "${balancer_name} max cell voltage"
+#    min_voltage_cell:
+#      name: "${balancer_name} min voltage cell"
+#    max_voltage_cell:
+#      name: "${balancer_name} max voltage cell"
+#    delta_cell_voltage:
+#      name: "${balancer_name} delta cell voltage"
+#    average_cell_voltage:
+#      name: "${balancer_name} average cell voltage"
+#    cell_voltage_1:
+#      name: "${balancer_name} cell voltage 1"
+#    cell_voltage_2:
+#      name: "${balancer_name} cell voltage 2"
+#    cell_voltage_3:
+#      name: "${balancer_name} cell voltage 3"
+#    cell_voltage_4:
+#      name: "${balancer_name} cell voltage 4"
+#    cell_voltage_5:
+#      name: "${balancer_name} cell voltage 5"
+#    cell_voltage_6:
+#      name: "${balancer_name} cell voltage 6"
+#    cell_voltage_7:
+#      name: "${balancer_name} cell voltage 7"
+#    cell_voltage_8:
+#      name: "${balancer_name} cell voltage 8"
+#    cell_voltage_9:
+#      name: "${balancer_name} cell voltage 9"
+#    cell_voltage_10:
+#      name: "${balancer_name} cell voltage 10"
+#    cell_voltage_11:
+#      name: "${balancer_name} cell voltage 11"
+#    cell_voltage_12:
+#      name: "${balancer_name} cell voltage 12"
+#    cell_voltage_13:
+#      name: "${balancer_name} cell voltage 13"
+#    cell_voltage_14:
+#      name: "${balancer_name} cell voltage 14"
+#    cell_voltage_15:
+#      name: "${balancer_name} cell voltage 15"
+#    cell_voltage_16:
+#      name: "${balancer_name} cell voltage 16"
+#    cell_resistance_1:
+#      name: "${balancer_name} cell resistance 1"
+#    cell_resistance_2:
+#      name: "${balancer_name} cell resistance 2"
+#    cell_resistance_3:
+#      name: "${balancer_name} cell resistance 3"
+#    cell_resistance_4:
+#      name: "${balancer_name} cell resistance 4"
+#    cell_resistance_5:
+#      name: "${balancer_name} cell resistance 5"
+#    cell_resistance_6:
+#      name: "${balancer_name} cell resistance 6"
+#    cell_resistance_7:
+#      name: "${balancer_name} cell resistance 7"
+#    cell_resistance_8:
+#      name: "${balancer_name} cell resistance 8"
+#    cell_resistance_9:
+#      name: "${balancer_name} cell resistance 9"
+#    cell_resistance_10:
+#      name: "${balancer_name} cell resistance 10"
+#    cell_resistance_11:
+#      name: "${balancer_name} cell resistance 11"
+#    cell_resistance_12:
+#      name: "${balancer_name} cell resistance 12"
+#    cell_resistance_13:
+#      name: "${balancer_name} cell resistance 13"
+#    cell_resistance_14:
+#      name: "${balancer_name} cell resistance 14"
+#    cell_resistance_15:
+#      name: "${balancer_name} cell resistance 15"
+#    cell_resistance_16:
+#      name: "${balancer_name} cell resistance 16"
+#    total_voltage:
+#      name: "${balancer_name} total voltage"
+#    temperature_sensor_1:
+#      name: "${balancer_name} temperature sensor 1"
+#    temperature_sensor_2:
+#      name: "${balancer_name} temperature sensor 2"
+#    total_runtime:
+#      name: "${balancer_name} total runtime"
+#    balancing_current:
+#      name: "${balancer_name} balancing current"
+    # Not implemented
+    # errors_bitmask:
+    #   name: "${balancer_name} errors bitmask"
+#    cell_detection_failed_bitmask:
+#      name: "${balancer_name} cell detection failed bitmask"
+#    cell_overvoltage_bitmask:
+#      name: "${balancer_name} cell overvoltage bitmask"
+#    cell_undervoltage_bitmask:
+#      name: "${balancer_name} cell undervoltage bitmask"
+#    cell_polarity_error_bitmask:
+#      name: "${balancer_name} cell polarity error bitmask"
+#    cell_excessive_line_resistance_bitmask:
+#      name: "${balancer_name} cell excessive line resistance bitmask"
+
+
+
+
+  - platform: template
+    name: "${device_type}-PV Total Power"
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    lambda: |-
+      return (int)((id(${device_type}_PV1_Power).state + id(${device_type}_PV2_Power).state));
+    update_interval: 10s
+
+  - platform: modbus_controller #${device_type}-køleplade temeratur
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Heat sink temperature"
+    id: ${device_type}_koleplade_temeratur
+    register_type: holding
+    address: 541
+    unit_of_measurement: "°C"
+    value_type: S_WORD
+    accuracy_decimals: 2
+    filters:
+      - offset: -1000
+      - multiply:  0.1
+ 
+  - platform: modbus_controller #${device_type}-load frequency
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-load frequency"
+    id: ${device_type}_load_frequency
+    register_type: holding
+    address: 655
+    unit_of_measurement: "Hz"
+    state_class: "measurement"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+    value_type: U_WORD
+ 
+  - platform: modbus_controller #${device_type}-inverter-frequency
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-inverter-frequency"
+    id: ${device_type}_inverter_frequency
+    register_type: holding
+    address: 638
+    unit_of_measurement: "Hz"
+    state_class: "measurement"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-PV1 Power"
+    id: ${device_type}_PV1_Power
+    register_type: holding
+    address: 672
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-PV2 Power"
+    id: ${device_type}_PV2_Power
+    register_type: holding
+    address: 673
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-PV1 Voltage"
+    id: ${device_type}_PV1_Voltage
+    register_type: holding
+    address: 676
+    unit_of_measurement: "V"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-PV2 Voltage"
+    id: ${device_type}_PV2_Voltage
+    register_type: holding
+    address: 678
+    unit_of_measurement: "V"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-PV1 Current"
+    id: ${device_type}_PV1_Current
+    register_type: holding
+    address: 677
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-PV2 Current"
+    id: ${device_type}_PV2_Current
+    register_type: holding
+    address: 679
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD  
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Daily Production"
+    id: ${device_type}_Daily_Production
+    register_type: holding
+    address: 529
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD  
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Total PV Production"  #Cumulative Production 
+    id: ${device_type}_Total_PV_Production
+    register_type: holding
+    address: 534
+    unit_of_measurement: "kWh"
+    state_class: "measurement"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_DWORD_R
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Total Grid Power"   # Grid side total power
+    id: ${device_type}_Total_Grid_Power
+    register_type: holding
+    address: 625
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Daily Energy Bought"
+    id: ${device_type}_Daily_Energy_Bought
+    register_type: holding
+    address: 520
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_WORD
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Daily Energy Sold"
+    id: ${device_type}_Daily_Energy_Sold
+    register_type: holding
+    address: 521
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_WORD
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Total Energy Bought"
+    id: ${device_type}_Total_Energy_Bought
+    register_type: holding
+    address: 522
+    unit_of_measurement: "kWh"
+#    state_class: "total_increasing"
+    state_class: "measurement"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_WORD
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Total Energy Sold"
+    id: ${device_type}_Total_Energy_Sold
+    register_type: holding
+    address: 524
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_WORD
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller #Total Consumption
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Total Consumption"
+    id: ${device_type}_Total_Consumption
+    register_type: holding
+    address: 527
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 2
+    value_type: U_DWORD_R
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-active power generation of today"
+    id: ${device_type}_active_power_generation_of_today
+    register_type: holding
+    address: 502
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: S_WORD
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Load Energy today"
+    id: ${device_type}_load_energy_today
+    register_type: holding
+    address: 526
+    unit_of_measurement: "kWh"
+#    state_class: "total_increasing"
+    state_class: "measurement"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: S_WORD
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Total Load Energy"
+    id: ${device_type}_total_load_energy
+    register_type: holding
+    address: 527
+    unit_of_measurement: "kWh"
+#    state_class: "total_increasing"
+    state_class: "measurement"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_DWORD_R
+#    value_type: S_WORD
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Grid Current L1"
+    id: ${device_type}_Grid_Current_L1
+    register_type: holding
+    address: 630
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.01
+    value_type: S_WORD  
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Grid Current L2"
+    id: ${device_type}_Grid_Current_L2
+    register_type: holding
+    address: 631
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.01
+    value_type: S_WORD   
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Grid Current L3"
+    id: ${device_type}_Grid_Current_L3
+    register_type: holding
+    address: 632
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.01
+    value_type: S_WORD   
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Grid Voltage L1"
+    id: ${device_type}_Grid_Voltage_L1
+    register_type: holding
+    address: 598
+    unit_of_measurement: "V"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD     
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Grid Voltage L2"
+    id: ${device_type}_Grid_Voltage_L2
+    register_type: holding
+    address: 599
+    unit_of_measurement: "V"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD     
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Grid Voltage L3"
+    id: ${device_type}_Grid_Voltage_L3
+    register_type: holding
+    address: 600
+    unit_of_measurement: "V"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD  
+
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Internal CT L1 Power"
+    id: ${device_type}_Internal_CT_L1_Power
+    register_type: holding
+    address: 604
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD  
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Internal CT L2 Power"
+    id: ${device_type}_Internal_CT_L2_Power
+    register_type: holding
+    address: 605
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD  
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Internal CT L3 Power"
+    id: ${device_type}_Internal_CT_L3_Power
+    register_type: holding
+    address: 606
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD  
+ 
+  - platform: modbus_controller  # Grid internal - total active power
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Internal total Power" 
+    id: ${device_type}_Internal_total_Power
+    register_type: holding
+    address: 607
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD   
+ 
+  - platform: modbus_controller  # Grid Current L1
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Out of Grid Current L1" 
+    id: ${device_type}_Out_of_Grid_Current_L1
+    register_type: holding
+    address: 613
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+    value_type: S_WORD   
+ 
+  - platform: modbus_controller  # Grid Current L2
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Out of Grid Current L2" 
+    id: ${device_type}_Out_of_Grid_Current_L2
+    register_type: holding
+    address: 614
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+    value_type: S_WORD   
+ 
+  - platform: modbus_controller  # Grid Current L3
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Out of Grid Current L3" 
+    id: ${device_type}_Out_of_Grid_Current_L3
+    register_type: holding
+    address: 615
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+    value_type: S_WORD   
+ 
+
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-External CT L1 Power"
+    id: ${device_type}_External_CT_L1_Power
+    register_type: holding
+    address: 616
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD  
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-External CT L2 Power"
+    id: ${device_type}_External_CT_L2_Power
+    register_type: holding
+    address: 617
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD  
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-External CT L3 Power"
+    id: ${device_type}_External_CT_L3_Power
+    register_type: holding
+    address: 618
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD     
+ 
+  - platform: modbus_controller  
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Out-of-grid–total power"
+    id: ${device_type}_out_of_grid_total_power
+    register_type: holding
+    address: 619
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD
+    
+  - platform: modbus_controller # Load totalpower
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Load totalpower" 
+    id: ${device_type}_Load_totalpower
+    register_type: holding
+    address: 653
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD
+ 
+  - platform: modbus_controller # Load totalpower
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Generator totalpower" 
+    id: ${device_type}_Generator_totalpower
+    register_type: holding
+    address: 667
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD
+ 
+
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Warning1"
+    id:  ${device_type}_Warning1
+    register_type: holding
+    address: 553
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Warning2"
+    id:  ${device_type}_Warning2
+    register_type: holding
+    address: 554
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Warning3"
+    id:  ${device_type}_Warning3
+    register_type: holding
+    address: 555
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Error1"
+    id:  ${device_type}_Error1
+    register_type: holding
+    address: 556
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Error2"
+    id:  ${device_type}_Error2
+    register_type: holding
+    address: 557
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Error3"
+    id:  ${device_type}_Error3
+    register_type: holding
+    address: 558
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Failure status of communication board"
+    id:  ${device_type}_Failure_status_of_communication_board
+    register_type: holding
+    address: 548
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Minimum insulation impedance"
+    id:  ${device_type}_Minimum_insulation_impedance
+    register_type: holding
+    unit_of_measurement: "kΩ"
+    state_class: "measurement"
+    address: 65
+    accuracy_decimals: 0
+    value_type: U_WORD
+    filters:
+      - multiply: 0.1
+ 
+  # Batterie
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Today charge of the battery"
+    id:  ${device_type}_Today_charge_of_the_battery
+    register_type: holding
+    address: 514
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_WORD
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Today discharge of the battery"
+    id:  ${device_type}_Today_discharge_of_the_battery
+    register_type: holding
+    address: 515
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_WORD
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    skip_updates: 5
+    name: "${device_type}-Total charge of the battery"
+    id:  ${device_type}_battery_total_charge
+    register_type: holding
+    address: 516
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_DWORD_R
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    skip_updates: 5
+    name: "${device_type}-Total discharge of the battery"
+    id:  ${device_type}_battery_total_discharge
+    register_type: holding
+    address: 518
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_DWORD_R 
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-battery temperature"
+    id:  ${device_type}_battery_temperature
+    register_type: holding
+    address: 586
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    value_type: U_WORD 
+    filters:
+      - offset: -1000
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-battery voltage"
+    id: ${device_type}_battery_voltage
+    register_type: holding
+    address: 587
+    unit_of_measurement: "V"
+    state_class: "measurement"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-battery capacity"
+    id: ${device_type}_battery_capacity
+    register_type: holding
+    address: 588
+    unit_of_measurement: "%"
+    state_class: "measurement"
+    accuracy_decimals: 1
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Battery output power"
+    id: ${device_type}_Battery_output_power
+    register_type: holding
+    address: 590
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD 
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Battery output current"
+    id: ${device_type}_Battery_output_current
+    register_type: holding
+    address: 591
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+    value_type: S_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-The corrected capacity of the battery"
+    id: ${device_type}_The_corrected_capacity_of_the_battery
+    register_type: holding
+    address: 592
+    unit_of_measurement: "Ah"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: U_WORD
+  # 1000    Pack Voltage                R    UINT16    2    10mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} total voltage"
+    address: 0x1000
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+  # 1001    Current                     R     INT16    2    10mA
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} current"
+    address: 0x1001
+    register_type: read
+    value_type: S_WORD
+    unit_of_measurement: "A"
+    device_class: current
+    state_class: measurement
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+  # 1002    Remaining capacity          R    UINT16    2    10mAH
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} remaining capacity"
+    address: 0x1002
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "Ah"
+    state_class: measurement
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+  # 1003    Total Capacity              R    UINT16    2    10mAH
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} total capacity"
+    address: 0x1003
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "Ah"
+    state_class: measurement
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+  # 1004    Total Discharge Capacity    R    UINT16    2    10AH
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} total discharge capacity"
+    address: 0x1004
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "Ah"
+    state_class: measurement
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+
+  # 1005    SOC                         R    UINT16    2    0.1%
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} state of charge"
+    address: 0x1005
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    device_class: battery
+    state_class: measurement
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.1
+
+  # 1006    SOH                         R    UINT16    2    0.1%
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} state of health"
+    address: 0x1006
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "%"
+    state_class: measurement
+    accuracy_decimals: 0
+
+  # 1007    Cycle                       R    UINT16    2    1
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cycle"
+    address: 0x1007
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: ""
+    state_class: measurement
+    accuracy_decimals: 0
+
+  # 1008    Averag of Cell Votage       R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} average cell voltage"
+    address: 0x1008
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 1009    Averag of Cell Temperature  R    UINT16    2    0.1K
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} average cell temperature"
+    address: 0x1009
+    register_type: read
+    value_type: S_WORD
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    filters:
+      - offset: -2731.5
+      - multiply: 0.1
+
+  # 100A    Max Cell Voltage            R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} max cell voltage"
+    address: 0x100A
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 100B    Min Cell Voltage            R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} min cell voltage"
+    address: 0x100B
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 100C    Max Cell Temperature        R    UINT16    2    0.1K
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} max cell temperature"
+    address: 0x100C
+    register_type: read
+    value_type: S_WORD
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    filters:
+      - offset: -2731.5
+      - multiply: 0.1
+
+  # 100D    Min Cell Temperature        R    UINT16    2    0.1K
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} min cell temperature"
+    address: 0x100D
+    register_type: read
+    value_type: S_WORD
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    filters:
+      - offset: -2731.5
+      - multiply: 0.1
+
+  # 100F    MaxDisCurt                  R    UINT16    2    1A
+  #         Max Discharging Current
+  # 1010    MaxChgCurt                  R    UINT16    2    1A
+  #         Max Charging Current
+
+  # 1100    Cell1 Voltage               R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 1"
+    address: 0x1100
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 1101    Cell2 Voltage               R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 2"
+    address: 0x1101
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 1102    Cell3 Voltage               R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 3"
+    address: 0x1102
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 1103    Cell4 Voltage               R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 4"
+    address: 0x1103
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 1104    Cell5 Voltage               R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 5"
+    address: 0x1104
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 1105    Cell6 Voltage               R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 6"
+    address: 0x1105
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 1106    Cell7 Voltage               R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 7"
+    address: 0x1106
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 1107    Cell8 Voltage               R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 8"
+    address: 0x1107
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 1108    Cell9 Voltage               R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 9"
+    address: 0x1108
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 1109    Cell10 Voltage              R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 10"
+    address: 0x1109
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 110A    Cell11 Voltage              R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 11"
+    address: 0x110A
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 110B    Cell12 Voltage              R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 12"
+    address: 0x110B
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 110C    Cell13 Voltage              R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 13"
+    address: 0x110C
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 110D    Cell14 Voltage              R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 14"
+    address: 0x110D
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 110E    Cell15 Voltage              R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 15"
+    address: 0x110E
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 110F    Cell16 Voltage              R    UINT16    2    1mV
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell voltage 16"
+    address: 0x110F
+    register_type: read
+    value_type: U_WORD
+    unit_of_measurement: "V"
+    device_class: voltage
+    state_class: measurement
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+  # 1110    Cell temperature 1          R    UINT16    2    0.1K
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell temperature 1"
+    address: 0x1110
+    register_type: read
+    value_type: S_WORD
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    filters:
+      - offset: -2731.5
+      - multiply: 0.1
+
+  # 1111    Cell temperature 2          R    UINT16    2    0.1K
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell temperature 2"
+    address: 0x1111
+    register_type: read
+    value_type: S_WORD
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    filters:
+      - offset: -2731.5
+      - multiply: 0.1
+
+  # 1112    Cell temperature 3          R    UINT16    2    0.1K
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell temperature 3"
+    address: 0x1112
+    register_type: read
+    value_type: S_WORD
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    filters:
+      - offset: -2731.5
+      - multiply: 0.1
+
+  # 1113    Cell temperature 4          R    UINT16    2    0.1K
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} cell temperature 4"
+    address: 0x1113
+    register_type: read
+    value_type: S_WORD
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    filters:
+      - offset: -2731.5
+      - multiply: 0.1
+
+  # 1118    Environment Temperature     R    UINT16    2    0.1K
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} environment temperature"
+    address: 0x1118
+    register_type: read
+    value_type: S_WORD
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    filters:
+      - offset: -2731.5
+      - multiply: 0.1
+
+  # 1119    Power temperature           R    UINT16    2    0.1K
+  - platform: modbus_controller
+    modbus_controller_id: bms0
+    name: "${bms_name} mosfet temperature"
+    address: 0x1119
+    register_type: read
+    value_type: S_WORD
+    unit_of_measurement: "Â°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    filters:
+      - offset: -2731.5
+      - multiply: 0.1
+
+  # Pack Info C
+  #
+  # 1200    Cells voltage 08-01low alarm state       R    HEX    1    1:alarm
+  # 1208    Cells voltage 16-09low alarm state       R    HEX    1    1:alarm
+  # 1210    Cells voltage 08-01high alarm state      R    HEX    1    1:alarm
+  # 1218    Cells voltage 16-09high alarm state      R    HEX    1    1:alarm
+  # 1220    Cell 08-01 temperature Tlow alarm state  R    HEX    1    1:alarm
+  # 1228    Cell 08-01 temperature high alarm state  R    HEX    1    1:alarm
+  # 1230    Cell 08-01 equalization event code       R    HEX    1    1:on 0:off
+  # 1238    Cell 16-09 equalization event code       R    HEX    1    1:on 0:off
+  # 1240    System state code                        R    HEX    1    See TB09
+  # 1248    Voltage event code                       R    HEX    1    See TB02
+  # 1250    Cells Temperature event code             R    HEX    1    See TB03
+  # 1258    Environment and power Temperature event code          R    HEX    1    See TB04
+  # 1260    Current event code1                      R    HEX    1    See TB05
+  # 1268    Current event code2                      R    HEX    1    See TB16
+  # 1270     The residual capacity code              R    HEX    1    See TB06
+
+  # System Parameter    reg. 1300...1367
+  # System Function     reg. 1400...1448
+  # System Control      reg. 1500...1519
+  # History Info        reg. 1600...1627
+  # Version Info        reg. 1700...1724
+  # PCS Control         reg. 1800...1823
+  # EMS Info A          reg. 2000...2019
+  # EMS Info B          reg. 2100...2115
+  # EMS Info C          reg. 2200...2248
+  #
+  # See docs/XZH BMS Modbus-RTU Protocol.pdf  
+switch:
+#  - platform: heltec_balancer_ble
+#    balancer:
+#      name: "${balancer_name} balancer"
+
+#  - platform: ble_client
+#    ble_client_id: client0
+#    id: ble_client_switch0
+#    name: "${balancer_name} enable bluetooth connection"
+  - platform: restart
+    name: "Restart ESP32-Deye Bridge"
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}_Solar_sell
+    register_type: holding
+    address: 145
+    bitmask: 1
+    entity_category: config
+    icon: "mdi:toggle-switch"
+ 
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Grid_Charge
+    register_type: holding
+    address: 130
+    bitmask: 1
+    entity_category: config
+    icon: "mdi:toggle-switch"
+ 
+  - platform: modbus_controller  # Advanced peak shaving and valley filling function enabled
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Time of Use 
+    id: ${device_type}_Time_of_Use
+    register_type: holding
+    address: 146
+    bitmask: 1
+    entity_category: config
+    icon: "mdi:toggle-switch"
+ 
+  - platform: modbus_controller  # Time point 1 charge enable - grid charging enable
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Time point 1 charge enable
+    register_type: holding
+    address: 172
+    bitmask: 1   # 2 hvis man ønsker Gen charging enabel i sted for.
+    entity_category: config
+    icon: "mdi:toggle-switch"
+ 
+  - platform: modbus_controller  # Time point 2 charge enable - grid charging enable
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Time point 2 charge enable
+    register_type: holding
+    address: 173
+    bitmask: 1    # 2 hvis man ønsker Gen charging enabel i sted for.
+    entity_category: config
+    icon: "mdi:toggle-switch"
+ 
+  - platform: modbus_controller  # Time point 3 charge enable - grid charging enable
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Time point 3 charge enable
+    register_type: holding
+    address: 174
+    bitmask: 1    # 2 hvis man ønsker Gen charging enabel i sted for.
+    entity_category: config
+    icon: "mdi:toggle-switch"
+ 
+  - platform: modbus_controller  # Time point 4 charge enable - grid charging enable
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Time point 4 charge enable
+    register_type: holding
+    address: 175
+    bitmask: 1    # 2 hvis man ønsker Gen charging enabel i sted for.
+    entity_category: config
+    icon: "mdi:toggle-switch"
+ 
+  - platform: modbus_controller  # Time point 5 charge enable - grid charging enable
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Time point 5 charge enable
+    register_type: holding
+    address: 176
+    bitmask: 1    # 2 hvis man ønsker Gen charging enabel i sted for.
+    entity_category: config
+    icon: "mdi:toggle-switch"
+ 
+  - platform: modbus_controller  # Time point 6 charge enable - grid charging enable
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Time point 6 charge enable
+    register_type: holding
+    address: 177
+    bitmask: 1    # 2 hvis man ønsker Gen charging enabel i sted for.
+    entity_category: config
+    icon: "mdi:toggle-switch"
+    
+button:
+#  - platform: heltec_balancer_ble
+#    retrieve_settings:
+#      name: "${balancer_name} retrieve settings"
+#      id: retrieve_settings_button
+#    retrieve_device_info:
+#      name: "${balancer_name} retrieve device info"
+#    retrieve_factory_defaults:
+#      name: "${balancer_name} retrieve factory defaults"
+      
+binary_sensor:
+#  - platform: heltec_balancer_ble
+#    balancing:
+#      name: "${balancer_name} balancing"
+#    online_status:
+#      name: "${balancer_name} online status"
+
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-AC INV relay # bit 0
+    id: ${device_type}_AC_INV_relay
+    register_type: holding
+    address: 552
+    bitmask: 0x1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-AC Load relay Reserved # bit 1
+    id: ${device_type}_AC_Load_relay_Reserved
+    register_type: holding
+    address: 552
+    bitmask: 0x2
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-AC grid relay # bit 2
+    id: ${device_type}_AC_grid_relay
+    register_type: holding
+    address: 552
+    bitmask: 0x4
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-AC Generator relay # bit 3
+    id: ${device_type}_AC_Generator_relay
+    register_type: holding
+    address: 552
+    bitmask: 0x8
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Turn off/on status   #The lower 4 bits represent the switch signal
+    id: ${device_type}_Turn_off_on_status
+    register_type: holding
+    address: 551
+    bitmask: 0x1
+ 
+text_sensor:
+#  - platform: heltec_balancer_ble
+    # Not implemented
+    # errors:
+    #   name: "${balancer_name} errors"
+#    operation_status:
+#      name: "${balancer_name} operation status"
+#    total_runtime_formatted:
+#      name: "${balancer_name} total runtime formatted"
+#    buzzer_mode:
+#      name: "${balancer_name} buzzer mode"
+#    battery_type:
+#      name: "${balancer_name} battery type"
+
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Running_Status
+    bitmask: 0
+    register_type: holding
+    address: 500
+    raw_encode: HEXBYTES
+    name: ${device_type}-Running Status
+    lambda: |-
+      uint16_t value = modbus_controller::word_from_hex_str(x, 0);
+      switch (value) {
+        case 0: return std::string("standby");
+        case 1: return std::string("selfcheck");
+        case 2: return std::string("normal");
+        case 3: return std::string("alarm");
+        case 4: return std::string("fault");
+        default: return std::string("----");
+      }
+      return x;
+
+number:
+#  - platform: heltec_balancer_ble
+#    cell_count:
+#      name: "${balancer_name} cell count"
+#    balance_trigger_voltage:
+#      name: "${balancer_name} balance trigger voltage"
+#    max_balance_current:
+#      name: "${balancer_name} max balance current"
+#    balance_sleep_voltage:
+#      name: "${balancer_name} balance sleep voltage"
+#    balance_start_voltage:
+#      name: "${balancer_name} balance start voltage"
+#    nominal_battery_capacity:
+#      name: "${balancer_name} nominal battery capacity"
+
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Battery_equalization_voltage
+    name: "${device_type}-Battery equalization voltage"
+    address: 99
+    unit_of_measurement: V
+    value_type: U_WORD
+    max_value: 55.4
+    min_value: 53.0
+    step: 0.1
+    mode: box
+    lambda: "return x * 0.01;"
+    write_lambda: "return x * 100;"
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Battery_absorption_voltage
+    name: "${device_type}-Battery absorption voltage"
+    address: 100
+    unit_of_measurement: V
+    value_type: U_WORD
+    max_value: 57.6
+    min_value: 53.0
+    step: 0.1
+    mode: box
+    lambda: "return x * 0.01;"
+    write_lambda: "return x * 100;"
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Battery_float_voltage
+    name: "${device_type}-Battery float voltage"
+    address: 101
+    unit_of_measurement: V
+    value_type: U_WORD
+    max_value: 55.4
+    min_value: 53.0
+    step: 0.1
+    mode: box
+    lambda: "return x * 0.01;"
+    write_lambda: "return x * 100;"
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Maximum_battery_charge_current
+    name: "${device_type}-Maximum battery charge current"
+    address: 108
+    unit_of_measurement: A
+    value_type: U_WORD
+    max_value: 200
+    min_value: 0
+    step: 1
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Maximum_battery_discharge_current
+    name: "${device_type}-Maximum battery discharge current"
+    address: 109
+    unit_of_measurement: A
+    value_type: U_WORD
+    max_value: 200
+    min_value: 0
+    step: 1
+
+
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Maximum_battery_grid_charge_current
+    name: "${device_type}-Maximum battery_grid charge current"
+    address: 128
+    unit_of_measurement: A
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_1
+    name: "${device_type}-Time point 1 start"
+    address: 148
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_2
+    name: "${device_type}-Time point 2 start"
+    address: 149
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_3
+    name: "${device_type}-Time point 3 start"
+    address: 150
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_4
+    name: "${device_type}-Time point 4 start"
+    address: 151
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_5
+    name: "${device_type}-Time point 5 start"
+    address: 152
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_6
+    name: "${device_type}-Time point 6 start"
+    address: 153
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_1_power
+    name: "${device_type}-Time point 1 power"
+    unit_of_measurement: W
+    address: 154
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_2_power
+    name: "${device_type}-Time point 2 power"
+    unit_of_measurement: W
+    address: 155
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_3_power
+    name: "${device_type}-Time point 3 power"
+    unit_of_measurement: W
+    address: 156
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_4_power
+    name: "${device_type}-Time point 4 power"
+    unit_of_measurement: W
+    address: 157
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_5_power
+    name: "${device_type}-Time point 5 power"
+    unit_of_measurement: W
+    address: 158
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_6_power
+    name: "${device_type}-Time point 6 power"
+    unit_of_measurement: W
+    address: 159
+    value_type: U_WORD
+    
+#######
+# NEEDED IF YOU USE BatV%
+#######   
+#
+#  - platform: modbus_controller
+#    use_write_multiple: true
+#    modbus_controller_id: ${modbus_controller_id}
+#    id: ${device_type}_Time_point_1_volts
+#    name: "${device_type}-Time point 1 volts"
+#    unit_of_measurement: V
+#    address: 160
+#    min_value: 38
+#    max_value: 57.6
+#    step: 0.1
+#    mode: box
+#    lambda: "return x * 0.01;"
+#    write_lambda: "return x * 100;"
+#    value_type: U_WORD
+#
+#  - platform: modbus_controller
+#    use_write_multiple: true
+#    modbus_controller_id: ${modbus_controller_id}
+#    id: ${device_type}_Time_point_2_volts
+#    name: "${device_type}-Time point 2 volts"
+#    unit_of_measurement: V
+#    address: 161
+#    min_value: 38
+#    max_value: 57.6
+#    step: 0.1
+#    mode: box
+#    lambda: "return x * 0.01;"
+#    write_lambda: "return x * 100;"
+#    value_type: U_WORD
+#
+#  - platform: modbus_controller
+#    use_write_multiple: true
+#    modbus_controller_id: ${modbus_controller_id}
+#    id: ${device_type}_Time_point_3_volts
+#    name: "${device_type}-Time point 3 volts"
+#    unit_of_measurement: V
+#    address: 162
+#    min_value: 38
+#    max_value: 57.6
+#    step: 0.1
+#    mode: box
+#    lambda: "return x * 0.01;"
+#    write_lambda: "return x * 100;"
+#    value_type: U_WORD
+#
+#  - platform: modbus_controller
+#    use_write_multiple: true
+#    modbus_controller_id: ${modbus_controller_id}
+#    id: ${device_type}_Time_point_4_volts
+#    name: "${device_type}-Time point 4 volts"
+#    unit_of_measurement: V
+#    address: 163
+#    min_value: 38
+#    max_value: 57.6
+#    step: 0.1
+#    mode: box
+#    lambda: "return x * 0.01;"
+#    write_lambda: "return x * 100;"
+#    value_type: U_WORD
+#
+#  - platform: modbus_controller
+#    use_write_multiple: true
+#    modbus_controller_id: ${modbus_controller_id}
+#    id: ${device_type}_Time_point_5_volts
+#    name: "${device_type}-Time point 5 volts"
+#    unit_of_measurement: V
+#    address: 164
+#    min_value: 38
+#    max_value: 57.6
+#    step: 0.1
+#    mode: box
+#    lambda: "return x * 0.01;"
+#    write_lambda: "return x * 100;"
+#    value_type: U_WORD
+#    
+#  - platform: modbus_controller
+#    use_write_multiple: true
+#    modbus_controller_id: ${modbus_controller_id}
+#    id: ${device_type}_Time_point_6_volts
+#    name: "${device_type}-Time point 6 volts"
+#    unit_of_measurement: V
+#    address: 165
+#    min_value: 38
+#    max_value: 57.6
+#    step: 0.1
+#    mode: box
+#    lambda: "return x * 0.01;"
+#    write_lambda: "return x * 100;"
+#    value_type: U_WORD
+
+#######
+# NEEDED IF YOU USE Lithium or Bat%
+#######    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_1_capacity
+    name: "${device_type}-Time point 1 capacity"
+    unit_of_measurement: "%"
+    address: 166
+    min_value: 0
+    max_value: 100
+    step: 5
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_2_capacity
+    name: "${device_type}-Time point 2 capacity"
+    unit_of_measurement: "%"
+    address: 167
+    min_value: 0
+    max_value: 100
+    step: 5
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_3_capacity
+    name: "${device_type}-Time point 3 capacity"
+    unit_of_measurement: "%"
+    address: 168
+    min_value: 0
+    max_value: 100
+    step: 5
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_4_capacity
+    name: "${device_type}-Time point 4 capacity"
+    unit_of_measurement: "%"
+    address: 169
+    min_value: 0
+    max_value: 100
+    step: 5
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_5_capacity
+    name: "${device_type}-Time point 5 capacity"
+    unit_of_measurement: "%"
+    address: 170
+    min_value: 0
+    max_value: 100
+    step: 5
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_6_capacity
+    name: "${device_type}-Time point 6 capacity"
+    unit_of_measurement: "%"
+    address: 171
+    min_value: 0
+    max_value: 100
+    step: 5
+    value_type: U_WORD
+      
