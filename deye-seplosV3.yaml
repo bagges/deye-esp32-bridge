@@ -1,6 +1,6 @@
 esphome:
-  name: deye-seplos-neey
-  friendly_name: deye-seplos-neey
+  name: deye-seplos_v3
+  friendly_name: deye-seplos_v3
 
 esp32:
   board: az-delivery-devkit-v4
@@ -9,7 +9,6 @@ esp32:
   
 substitutions:
   bms_name: seplos-bms
-  balancer_name: neey-balancer
   modbus_update_interval: "10s"
   settings_skipped_updates: "10"
   query_throttle: "50ms"
@@ -18,9 +17,6 @@ substitutions:
   device_description: "Esphome component for Deye sun-10k-sg04lp3"
   modbus_controller_id: sg04lp3
   external_components_source1: github://syssi/esphome-seplos-bms@main
-#  external_components_source2: github://syssi/esphome-jk-bms@main
-  mac_address: 3C:A5:51:96:FF:FF
-
 
 
 # Enable logging
@@ -33,29 +29,22 @@ api:
 
 ota:
   password: "..."
-#  on_begin:
-#    then:
-#      - switch.turn_off: ble_client_switch0
-#      - logger.log: "BLE connection suspended for OTA update"
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
-#  ap:
-#    ssid: "Deye-Seplos-Neey"
-#    password: "kL3kAio4DeDb"
+  ap:
+    ssid: "Deye-Seplos-Neey"
+    password: "kL3kAio4DeDb"
 
-#mqtt:
-#  broker: 192.168.1.1
-#  port: 1883
-#  topic_prefix: deye10k
-#  username: username
-#  password: password
+mqtt:
+  broker: 192.168.1.1
+  port: 1883
+  topic_prefix: deye10k
+  username: username
+  password: password
 
-#web_server:
-#  port: 80
-#  ota: False  
 time:
   - platform: sntp
     id: sntp_time
@@ -69,38 +58,6 @@ captive_portal:
 external_components:
   - source: ${external_components_source1}
     refresh: 0s
-#  - source: ${external_components_source2}
-#    refresh: 0s
-
-#esp32_ble_tracker:
-#  on_ble_advertise:
-#    then:
-#      - lambda: |-
-#          if (x.get_name().rfind("GW-", 0) == 0) {
-#            ESP_LOGI("ble_adv", "New Heltec/NEEY balancer found");
-#            ESP_LOGI("ble_adv", "  Name: %s", x.get_name().c_str());
-#            ESP_LOGI("ble_adv", "  MAC address: %s", x.address_str().c_str());
-#            ESP_LOGD("ble_adv", "  Advertised service UUIDs:");
-#            for (auto uuid : x.get_service_uuids()) {
-#              ESP_LOGD("ble_adv", "    - %s", uuid.to_string().c_str());
-#            }
-#          }
-
-#ble_client:
-#  - mac_address: ${mac_address}
-#    id: client0
-
-#heltec_balancer_ble:
-#  - ble_client_id: client0
-#    throttle: 5s
-#    id: bms1
-
-#interval:
-#  - interval: 30min
-#    then:
-#      - button.press: retrieve_settings_button
-
-
 uart:
   - id: uartdeye
     tx_pin: 27
@@ -110,7 +67,6 @@ uart:
     tx_pin: 17
     rx_pin: 16
     baud_rate: 19200
-#    rx_buffer_size: 384
     debug:
       direction: BOTH
       dummy_receiver: false
@@ -140,110 +96,6 @@ modbus:
 
 
 sensor:
-#  - platform: heltec_balancer_ble
-#    min_cell_voltage:
-#      name: "${balancer_name} min cell voltage"
-#    max_cell_voltage:
-#      name: "${balancer_name} max cell voltage"
-#    min_voltage_cell:
-#      name: "${balancer_name} min voltage cell"
-#    max_voltage_cell:
-#      name: "${balancer_name} max voltage cell"
-#    delta_cell_voltage:
-#      name: "${balancer_name} delta cell voltage"
-#    average_cell_voltage:
-#      name: "${balancer_name} average cell voltage"
-#    cell_voltage_1:
-#      name: "${balancer_name} cell voltage 1"
-#    cell_voltage_2:
-#      name: "${balancer_name} cell voltage 2"
-#    cell_voltage_3:
-#      name: "${balancer_name} cell voltage 3"
-#    cell_voltage_4:
-#      name: "${balancer_name} cell voltage 4"
-#    cell_voltage_5:
-#      name: "${balancer_name} cell voltage 5"
-#    cell_voltage_6:
-#      name: "${balancer_name} cell voltage 6"
-#    cell_voltage_7:
-#      name: "${balancer_name} cell voltage 7"
-#    cell_voltage_8:
-#      name: "${balancer_name} cell voltage 8"
-#    cell_voltage_9:
-#      name: "${balancer_name} cell voltage 9"
-#    cell_voltage_10:
-#      name: "${balancer_name} cell voltage 10"
-#    cell_voltage_11:
-#      name: "${balancer_name} cell voltage 11"
-#    cell_voltage_12:
-#      name: "${balancer_name} cell voltage 12"
-#    cell_voltage_13:
-#      name: "${balancer_name} cell voltage 13"
-#    cell_voltage_14:
-#      name: "${balancer_name} cell voltage 14"
-#    cell_voltage_15:
-#      name: "${balancer_name} cell voltage 15"
-#    cell_voltage_16:
-#      name: "${balancer_name} cell voltage 16"
-#    cell_resistance_1:
-#      name: "${balancer_name} cell resistance 1"
-#    cell_resistance_2:
-#      name: "${balancer_name} cell resistance 2"
-#    cell_resistance_3:
-#      name: "${balancer_name} cell resistance 3"
-#    cell_resistance_4:
-#      name: "${balancer_name} cell resistance 4"
-#    cell_resistance_5:
-#      name: "${balancer_name} cell resistance 5"
-#    cell_resistance_6:
-#      name: "${balancer_name} cell resistance 6"
-#    cell_resistance_7:
-#      name: "${balancer_name} cell resistance 7"
-#    cell_resistance_8:
-#      name: "${balancer_name} cell resistance 8"
-#    cell_resistance_9:
-#      name: "${balancer_name} cell resistance 9"
-#    cell_resistance_10:
-#      name: "${balancer_name} cell resistance 10"
-#    cell_resistance_11:
-#      name: "${balancer_name} cell resistance 11"
-#    cell_resistance_12:
-#      name: "${balancer_name} cell resistance 12"
-#    cell_resistance_13:
-#      name: "${balancer_name} cell resistance 13"
-#    cell_resistance_14:
-#      name: "${balancer_name} cell resistance 14"
-#    cell_resistance_15:
-#      name: "${balancer_name} cell resistance 15"
-#    cell_resistance_16:
-#      name: "${balancer_name} cell resistance 16"
-#    total_voltage:
-#      name: "${balancer_name} total voltage"
-#    temperature_sensor_1:
-#      name: "${balancer_name} temperature sensor 1"
-#    temperature_sensor_2:
-#      name: "${balancer_name} temperature sensor 2"
-#    total_runtime:
-#      name: "${balancer_name} total runtime"
-#    balancing_current:
-#      name: "${balancer_name} balancing current"
-    # Not implemented
-    # errors_bitmask:
-    #   name: "${balancer_name} errors bitmask"
-#    cell_detection_failed_bitmask:
-#      name: "${balancer_name} cell detection failed bitmask"
-#    cell_overvoltage_bitmask:
-#      name: "${balancer_name} cell overvoltage bitmask"
-#    cell_undervoltage_bitmask:
-#      name: "${balancer_name} cell undervoltage bitmask"
-#    cell_polarity_error_bitmask:
-#      name: "${balancer_name} cell polarity error bitmask"
-#    cell_excessive_line_resistance_bitmask:
-#      name: "${balancer_name} cell excessive line resistance bitmask"
-
-
-
-
   - platform: template
     name: "${device_type}-PV Total Power"
     unit_of_measurement: "W"
