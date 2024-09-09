@@ -102,13 +102,13 @@ select:
                 ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Normal", abs(id(helper_discharge_current)));
                 return abs(id(helper_discharge_current));
               } else if (id(batterymode).state == "Hold") {
-                ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Hold", 0);
-                return 0;
+                ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Hold", 5);
+                return 5;
               } else if (id(batterymode).state == "Charge") {
                 return abs(id(helper_discharge_current));
                 ESP_LOGD("Battery Mode", "Charge selected, not implemented!");
               }
-              return 0;
+              return 5;
 # curl -X POST -d "" "http://esp32-sandbox.local/select/batterymode/set?option=Hold"
 switch:
   - platform: restart
@@ -327,15 +327,15 @@ number:
     unit_of_measurement: A
     value_type: U_WORD
     max_value: 140
-    min_value: 0
+    min_value: 5
     on_value:
       then:
         - globals.set:
             id: helper_discharge_current
             value: !lambda |-
-              if(x > 0) {
+              if(x > 5) {
                 return (int)x;
-              } else if (x == 0) {
+              } else if (x == 5) {
                 return id(helper_discharge_current);
               } else {
                 return id(helper_discharge_current)*-1;
