@@ -6,6 +6,11 @@ esphome:
 logger:
   level: INFO
 
+globals:
+   - id: helper_discharge_current
+     type: int
+     restore_value: yes
+     initial_value: '100'
 substitutions:
   bms_name: seplos-bms
   modbus_update_interval: "8s"
@@ -78,6 +83,33 @@ time:
     servers:
     - pool.ntp.org
     
+select:
+  - platform: template
+    name: BatteryMode
+    id: batterymode
+    options:
+     - "Normal"
+     - "Hold"
+     - "Charge"
+    initial_option: "Normal"
+    optimistic: true
+    on_value:
+      then:
+        - number.set:
+            id: ${device_type}_Maximum_battery_discharge_current
+            value: !lambda |-
+              if (id(batterymode).state == "Normal") {
+                ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Normal", abs(id(helper_discharge_current)));
+                return abs(id(helper_discharge_current));
+              } else if (id(batterymode).state == "Hold") {
+                ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Hold", 5);
+                return 5;
+              } else if (id(batterymode).state == "Charge") {
+                return abs(id(helper_discharge_current));
+                ESP_LOGD("Battery Mode", "Charge selected, not implemented!");
+              }
+              return 5;
+# curl -X POST -d "" "http://esp32-sandbox.local/select/batterymode/set?option=Hold"
 switch:
   - platform: restart
     name: "Restart ESP32-Deye Bridge"
@@ -294,6 +326,20 @@ number:
     address: 109
     unit_of_measurement: A
     value_type: U_WORD
+    max_value: 140
+    min_value: 5
+    on_value:
+      then:
+        - globals.set:
+            id: helper_discharge_current
+            value: !lambda |-
+              if(x > 5) {
+                return (int)x;
+              } else if (x == 5) {
+                return id(helper_discharge_current);
+              } else {
+                return id(helper_discharge_current)*-1;
+              }
 
   - platform: modbus_controller
     use_write_multiple: true
