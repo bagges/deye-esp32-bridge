@@ -67,6 +67,7 @@ modbus:
   uart_id: uartdeye
 
 ota:
+  platform: esphome
   password: ""
 
 wifi:
@@ -266,49 +267,26 @@ text_sensor:
       }
       return x;
 
+#  - platform: modbus_controller
+#    modbus_controller_id: ${modbus_controller_id}
+#    name: "${device_type}-system time"
+#    id: ${device_type}_system_time
+#    register_type: holding
+#    address: 62
+#    register_count: 3
+#    response_size: 6
+#    lambda: |-
+#      int jahr = (int)data[item->offset]+2000;
+#      int monat = (int)data[item->offset + 1];
+#      int tag = (int)data[item->offset + 2];
+#      int stunde = (int)data[item->offset + 3];
+#      int minute = (int)data[item->offset + 4];
+#      int sekunde = (int)data[item->offset + 5];
+#      char buffer[20];
+#      sprintf(buffer, "%d-%d-%d %d:%d:%d", jahr, monat, tag, stunde, minute, sekunde);
+#      return {buffer};
+      
 number:
-  - platform: modbus_controller
-    use_write_multiple: true
-    modbus_controller_id: ${modbus_controller_id}
-    id: ${device_type}_Battery_equalization_voltage
-    name: "${device_type}-Battery equalization voltage"
-    address: 99
-    unit_of_measurement: V
-    value_type: U_WORD
-    max_value: 55.4
-    min_value: 53.0
-    step: 0.1
-    mode: box
-    lambda: "return x * 0.01;"
-    write_lambda: "return x * 100;"
-  - platform: modbus_controller
-    use_write_multiple: true
-    modbus_controller_id: ${modbus_controller_id}
-    id: ${device_type}_Battery_absorption_voltage
-    name: "${device_type}-Battery absorption voltage"
-    address: 100
-    unit_of_measurement: V
-    value_type: U_WORD
-    max_value: 57.6
-    min_value: 53.0
-    step: 0.1
-    mode: box
-    lambda: "return x * 0.01;"
-    write_lambda: "return x * 100;"
-  - platform: modbus_controller
-    use_write_multiple: true
-    modbus_controller_id: ${modbus_controller_id}
-    id: ${device_type}_Battery_float_voltage
-    name: "${device_type}-Battery float voltage"
-    address: 101
-    unit_of_measurement: V
-    value_type: U_WORD
-    max_value: 55.4
-    min_value: 53.0
-    step: 0.1
-    mode: box
-    lambda: "return x * 0.01;"
-    write_lambda: "return x * 100;"
   - platform: modbus_controller
     use_write_multiple: true
     modbus_controller_id: ${modbus_controller_id}
@@ -454,7 +432,49 @@ number:
     
 #######
 # NEEDED IF YOU USE BatV%
-#######   
+#######
+#  - platform: modbus_controller
+#    use_write_multiple: true
+#    modbus_controller_id: ${modbus_controller_id}
+#    id: ${device_type}_Battery_equalization_voltage
+#    name: "${device_type}-Battery equalization voltage"
+#    address: 99
+#    unit_of_measurement: V
+#    value_type: U_WORD
+#    max_value: 55.4
+#    min_value: 53.0
+#    step: 0.1
+#    mode: box
+#    lambda: "return x * 0.01;"
+#    write_lambda: "return x * 100;"
+#  - platform: modbus_controller
+#    use_write_multiple: true
+#    modbus_controller_id: ${modbus_controller_id}
+#    id: ${device_type}_Battery_absorption_voltage
+#    name: "${device_type}-Battery absorption voltage"
+#    address: 100
+#    unit_of_measurement: V
+#    value_type: U_WORD
+#    max_value: 57.6
+#    min_value: 53.0
+#    step: 0.1
+#    mode: box
+#    lambda: "return x * 0.01;"
+#    write_lambda: "return x * 100;"
+#  - platform: modbus_controller
+#    use_write_multiple: true
+#    modbus_controller_id: ${modbus_controller_id}
+#    id: ${device_type}_Battery_float_voltage
+#    name: "${device_type}-Battery float voltage"
+#    address: 101
+#    unit_of_measurement: V
+#    value_type: U_WORD
+#    max_value: 55.4
+#    min_value: 53.0
+#    step: 0.1
+#    mode: box
+#    lambda: "return x * 0.01;"
+#    write_lambda: "return x * 100;"
 #
 #  - platform: modbus_controller
 #    use_write_multiple: true
