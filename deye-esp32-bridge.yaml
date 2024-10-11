@@ -11,6 +11,14 @@ globals:
      type: int
      restore_value: yes
      initial_value: '100'
+   - id: max_soc
+     type: float
+     restore_value: yes
+     initial_value: '0.0'
+   - id: target_soc
+     type: float
+     restore_value: yes
+     initial_value: '30.0'
 substitutions:
   bms_name: seplos-bms
   modbus_update_interval: "8s"
@@ -83,7 +91,58 @@ time:
     timezone: Europe/Berlin
     servers:
     - pool.ntp.org
-    
+    on_time:
+      - seconds: 0
+        minutes: 0
+        hours: 23
+        days_of_week: MON-SUN
+        then:
+          - lambda: |-
+              if (id(batterylife_enabled).state) {
+                float new_target = id(target_soc);
+                if (id(max_soc) >= 95.0) {
+                  new_target = id(target_soc) - 5.0;
+                } else if (id(max_soc) < 85.0) {
+                  new_target = id(target_soc) + 5.0;
+                }
+                if (id(target_soc) > 85.0) {
+                  new_target = 85.0;
+                }
+                if (id(target_soc) < 30.0) {
+                  new_target = 30.0;
+                }
+                id(target_soc) = new_target;
+                id(max_soc) = 0.0;
+              }
+          - number.set:
+              id: ${device_type}_Time_point_1_capacity
+              value: !lambda |-
+                  return id(target_soc);
+          - delay: 1s
+          - number.set:
+              id: ${device_type}_Time_point_2_capacity
+              value: !lambda |-
+                  return id(target_soc);
+          - delay: 1s
+          - number.set:
+              id: ${device_type}_Time_point_3_capacity
+              value: !lambda |-
+                  return id(target_soc);
+          - delay: 1s
+          - number.set:
+              id: ${device_type}_Time_point_4_capacity
+              value: !lambda |-
+                  return id(target_soc);
+          - delay: 1s
+          - number.set:
+              id: ${device_type}_Time_point_5_capacity
+              value: !lambda |-
+                  return id(target_soc);
+          - delay: 1s
+          - number.set:
+              id: ${device_type}_Time_point_6_capacity
+              value: !lambda |-
+                  return id(target_soc);
 select:
   - platform: template
     name: BatteryMode
@@ -112,6 +171,11 @@ select:
               return 5;
 # curl -X POST -d "" "http://esp32-sandbox.local/select/batterymode/set?option=Hold"
 switch:
+  - platform: template
+    name: "Battery Life enabled"
+    id: batterylife_enabled
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
   - platform: restart
     name: "Restart ESP32-Deye Bridge"
   - platform: modbus_controller
@@ -642,6 +706,23 @@ number:
     value_type: U_WORD
 
 sensor:
+  - platform: template
+    name: "Today Max SoC"
+    unit_of_measurement: "%"
+    device_class: battery
+    state_class: measurement
+    id: max_soc_sensor
+    lambda: |-
+      return id(max_soc);
+  - platform: template
+    name: "Target SoC"
+    unit_of_measurement: "%"
+    device_class: battery
+    state_class: measurement
+    id: target_soc_sensor
+    lambda: |-
+      return id(target_soc);
+      
   - platform: template
     name: "${device_type}-PV Total Power"
     unit_of_measurement: "W"
@@ -1236,6 +1317,14 @@ sensor:
     state_class: "measurement"
     accuracy_decimals: 1
     value_type: U_WORD
+    on_value:
+      then:
+        - lambda: |-
+            if (id(batterylife_enabled).state) {
+              if (id(${device_type}_battery_capacity).state > id(max_soc)) {
+                id(max_soc) = id(${device_type}_battery_capacity).state;
+              }
+            }
  
   - platform: modbus_controller
     modbus_controller_id: ${modbus_controller_id}
