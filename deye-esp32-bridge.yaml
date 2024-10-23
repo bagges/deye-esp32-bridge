@@ -97,52 +97,55 @@ time:
         hours: 23
         days_of_week: MON-SUN
         then:
-          - lambda: |-
-              if (id(batterylife_enabled).state) {
-                float new_target = id(target_soc);
-                if (id(max_soc) >= 95.0) {
-                  new_target = id(target_soc) - 5.0;
-                } else if (id(max_soc) < 85.0) {
-                  new_target = id(target_soc) + 5.0;
-                }
-                if (id(target_soc) > 85.0) {
-                  new_target = 85.0;
-                }
-                if (id(target_soc) < 30.0) {
-                  new_target = 30.0;
-                }
-                id(target_soc) = new_target;
-                id(max_soc) = 0.0;
-              }
-          - number.set:
-              id: ${device_type}_Time_point_1_capacity
-              value: !lambda |-
-                  return id(target_soc);
-          - delay: 1s
-          - number.set:
-              id: ${device_type}_Time_point_2_capacity
-              value: !lambda |-
-                  return id(target_soc);
-          - delay: 1s
-          - number.set:
-              id: ${device_type}_Time_point_3_capacity
-              value: !lambda |-
-                  return id(target_soc);
-          - delay: 1s
-          - number.set:
-              id: ${device_type}_Time_point_4_capacity
-              value: !lambda |-
-                  return id(target_soc);
-          - delay: 1s
-          - number.set:
-              id: ${device_type}_Time_point_5_capacity
-              value: !lambda |-
-                  return id(target_soc);
-          - delay: 1s
-          - number.set:
-              id: ${device_type}_Time_point_6_capacity
-              value: !lambda |-
-                  return id(target_soc);
+          - if:
+              condition:
+                lambda: |-
+                  return id(batterylife_enabled).state;
+              then:
+                - lambda: |-
+                    float new_target = id(target_soc);
+                    if (id(max_soc) >= 95.0) {
+                      new_target = id(target_soc) - 5.0;
+                    } else if (id(max_soc) < 85.0) {
+                      new_target = id(target_soc) + 5.0;
+                    }
+                    if (id(target_soc) > 85.0) {
+                      new_target = 85.0;
+                    }
+                    if (id(target_soc) < 30.0) {
+                      new_target = 30.0;
+                    }
+                    id(target_soc) = new_target;
+                    id(max_soc) = 0.0;
+                - number.set:
+                    id: ${device_type}_Time_point_1_capacity
+                    value: !lambda |-
+                        return id(target_soc);
+                - delay: 1s
+                - number.set:
+                    id: ${device_type}_Time_point_2_capacity
+                    value: !lambda |-
+                        return id(target_soc);
+                - delay: 1s
+                - number.set:
+                    id: ${device_type}_Time_point_3_capacity
+                    value: !lambda |-
+                        return id(target_soc);
+                - delay: 1s
+                - number.set:
+                    id: ${device_type}_Time_point_4_capacity
+                    value: !lambda |-
+                        return id(target_soc);
+                - delay: 1s
+                - number.set:
+                    id: ${device_type}_Time_point_5_capacity
+                    value: !lambda |-
+                        return id(target_soc);
+                - delay: 1s
+                - number.set:
+                    id: ${device_type}_Time_point_6_capacity
+                    value: !lambda |-
+                        return id(target_soc);
 select:
   - platform: template
     name: BatteryMode
