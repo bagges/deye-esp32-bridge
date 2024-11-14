@@ -11,6 +11,10 @@ globals:
      type: int
      restore_value: yes
      initial_value: '100'
+   - id: target_discharge_current
+     type: int
+     restore_value: yes
+     initial_value: '100'
    - id: max_soc
      type: float
      restore_value: yes
@@ -157,21 +161,27 @@ select:
     initial_option: "Normal"
     optimistic: true
     on_value:
-      then:
-        - number.set:
-            id: ${device_type}_Maximum_battery_discharge_current
-            value: !lambda |-
-              if (id(batterymode).state == "Normal") {
-                ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Normal", abs(id(helper_discharge_current)));
-                return abs(id(helper_discharge_current));
-              } else if (id(batterymode).state == "Hold") {
-                ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Hold", 5);
-                return 5;
-              } else if (id(batterymode).state == "Charge") {
-                return abs(id(helper_discharge_current));
-                ESP_LOGD("Battery Mode", "Charge selected, not implemented!");
-              }
-              return 5;
+      - while:
+          condition:
+            lambda: |-
+              return id(target_discharge_current) != id(${device_type}_Maximum_battery_discharge_current).state;
+          then:
+            - number.set:
+                id: ${device_type}_Maximum_battery_discharge_current
+                value: !lambda |-
+                  id(target_discharge_current) = 5;
+                  if (id(batterymode).state == "Normal") {
+                    ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Normal", abs(id(helper_discharge_current)));
+                    id(target_discharge_current) = abs(id(helper_discharge_current));
+                    return abs(id(helper_discharge_current));
+                  } else if (id(batterymode).state == "Hold") {
+                    ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Hold", id(target_discharge_current));
+                    return id(target_discharge_current);
+                  } else if (id(batterymode).state == "Charge") {
+                    return abs(id(helper_discharge_current));
+                    ESP_LOGD("Battery Mode", "Charge selected, not implemented!");
+                  }
+                  return id(target_discharge_current);
 # curl -X POST -d "" "http://esp32-sandbox.local/select/batterymode/set?option=Hold"
 switch:
   - platform: template
