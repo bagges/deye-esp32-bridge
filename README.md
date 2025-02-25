@@ -9,7 +9,7 @@ This PCB and Software is used to create a board which communicates with your Dey
 <img src="img/3d.jpg">
 
 # BOM
- - PCB (designed with easyeda and produced by jlcpcb)
+ - [PCB (designed with easyeda and produced by jlcpcb)](https://www.makeiton.de/produkt-kategorie/bauteile/)
  - [AZDelivery ESP32 Dev v4](https://amzn.to/41Sd0v4)
  - [2x RS485 Serial Converter](https://amzn.to/3L1OmBq)
  - [DC/DC Step Down Module](https://amzn.to/3oFFiur)
