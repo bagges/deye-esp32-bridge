@@ -168,8 +168,8 @@ select:
                 ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Hold", 5);
                 return 5;
               } else if (id(batterymode).state == "Charge") {
-                return abs(id(helper_discharge_current));
                 ESP_LOGD("Battery Mode", "Charge selected, not implemented!");
+                return abs(id(helper_discharge_current));
               }
               return 5;
 # curl -X POST -d "" "http://esp32-sandbox.local/select/batterymode/set?option=Hold"
