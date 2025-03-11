@@ -105,14 +105,14 @@ time:
                 - lambda: |-
                     float new_target = id(target_soc);
                     if (id(max_soc) >= 95.0) {
-                      new_target = id(target_soc) - 5.0;
+                      new_target = new_target - 5.0;
                     } else if (id(max_soc) < 85.0) {
-                      new_target = id(target_soc) + 5.0;
+                      new_target = new_target + 5.0;
                     }
-                    if (id(target_soc) > 85.0) {
+                    if (new_target > 85.0) {
                       new_target = 85.0;
                     }
-                    if (id(target_soc) < 30.0) {
+                    if (new_target < 30.0) {
                       new_target = 30.0;
                     }
                     id(target_soc) = new_target;
