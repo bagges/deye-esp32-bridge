@@ -935,7 +935,7 @@ sensor:
     address: 0x1009
     register_type: read
     value_type: S_WORD
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 1
@@ -978,7 +978,7 @@ sensor:
     address: 0x100C
     register_type: read
     value_type: S_WORD
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 1
@@ -993,7 +993,7 @@ sensor:
     address: 0x100D
     register_type: read
     value_type: S_WORD
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 1
@@ -1237,7 +1237,7 @@ sensor:
     address: 0x1110
     register_type: read
     value_type: S_WORD
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 1
@@ -1252,7 +1252,7 @@ sensor:
     address: 0x1111
     register_type: read
     value_type: S_WORD
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 1
@@ -1267,7 +1267,7 @@ sensor:
     address: 0x1112
     register_type: read
     value_type: S_WORD
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 1
@@ -1282,7 +1282,7 @@ sensor:
     address: 0x1113
     register_type: read
     value_type: S_WORD
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 1
@@ -1297,7 +1297,7 @@ sensor:
     address: 0x1118
     register_type: read
     value_type: S_WORD
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 1
@@ -1312,7 +1312,7 @@ sensor:
     address: 0x1119
     register_type: read
     value_type: S_WORD
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 1
