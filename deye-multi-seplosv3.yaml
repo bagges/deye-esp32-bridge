@@ -1,0 +1,1974 @@
+esphome:
+  name: deye-multi-seplos
+  friendly_name: Deye_Multi-Seplos
+
+external_components:
+  - source: ${external_components_source1}
+    refresh: 0s
+  - source: ${external_components_source2}
+    refresh: 0s
+
+
+substitutions:
+  time: "10" # update interval for all data points
+  bms_name: seplos-bms
+  modbus_update_interval: "10s"
+  settings_skipped_updates: "10"
+  query_throttle: "100ms"
+  device_name: deye
+  device_type: sun10k
+  device_description: "Esphome component for Deye sun-10k-sg04lp3"
+  modbus_controller_id: sg04lp3
+  external_components_source1: github://syssi/esphome-seplos-bms@main
+  external_components_source2: github://DpunktS/seplos_v3_sniffer
+
+esp32:
+  board: nodemcu-32s
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+
+globals:
+   - id: helper_discharge_current
+     type: int
+     restore_value: yes
+     initial_value: '100'
+   - id: max_soc
+     type: float
+     restore_value: yes
+     initial_value: '0.0'
+   - id: target_soc
+     type: float
+     restore_value: yes
+     initial_value: '30.0'     
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: ""
+
+ota:
+  - platform: esphome
+    password: ""
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Deye-Multi-Seplos"
+    password: ""
+
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: Europe/Berlin
+    servers:
+    - pool.ntp.org
+    on_time:
+      - seconds: 0
+        minutes: 0
+        hours: 23
+        days_of_week: MON-SUN
+        then:
+          - if:
+              condition:
+                lambda: |-
+                  return id(batterylife_enabled).state;
+              then:
+                - lambda: |-
+                    float new_target = id(target_soc);
+                    if (id(max_soc) >= 95.0) {
+                      new_target = new_target - 5.0;
+                    } else if (id(max_soc) < 85.0) {
+                      new_target = new_target + 5.0;
+                    }
+                    if (new_target > 85.0) {
+                      new_target = 85.0;
+                    }
+                    if (new_target < 30.0) {
+                      new_target = 30.0;
+                    }
+                    id(target_soc) = new_target;
+                    id(max_soc) = 0.0;
+                - number.set:
+                    id: ${device_type}_Time_point_1_capacity
+                    value: !lambda |-
+                        return id(target_soc);
+                - delay: 1s
+                - number.set:
+                    id: ${device_type}_Time_point_2_capacity
+                    value: !lambda |-
+                        return id(target_soc);
+                - delay: 1s
+                - number.set:
+                    id: ${device_type}_Time_point_3_capacity
+                    value: !lambda |-
+                        return id(target_soc);
+                - delay: 1s
+                - number.set:
+                    id: ${device_type}_Time_point_4_capacity
+                    value: !lambda |-
+                        return id(target_soc);
+                - delay: 1s
+                - number.set:
+                    id: ${device_type}_Time_point_5_capacity
+                    value: !lambda |-
+                        return id(target_soc);
+                - delay: 1s
+                - number.set:
+                    id: ${device_type}_Time_point_6_capacity
+                    value: !lambda |-
+                        return id(target_soc);        
+
+
+select:
+  - platform: template
+    name: BatteryMode
+    id: batterymode
+    options:
+     - "Normal"
+     - "Hold"
+     - "Charge"
+    initial_option: "Normal"
+    optimistic: true
+    on_value:
+      then:
+        - delay: 200ms      
+        - number.set:
+            id: ${device_type}_Maximum_battery_discharge_current
+            value: !lambda |-
+              if (id(batterymode).current_option() == "Normal") {
+                ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Normal", abs(id(helper_discharge_current)));
+                return abs(id(helper_discharge_current));
+              } else if (id(batterymode).current_option() == "Hold") {
+                ESP_LOGI("Battery Mode", "Mode: %s with current of: %dA", "Hold", 5);
+                return 5;
+              } else if (id(batterymode).current_option() == "Charge") {
+                ESP_LOGD("Battery Mode", "Charge selected, not implemented!");
+                return abs(id(helper_discharge_current));                
+              }
+              return 5;
+        # Add verification after write
+        - delay: 500ms
+        - lambda: |-
+            ESP_LOGI("Battery Mode", "Current discharge setting: %.0fA", id(${device_type}_Maximum_battery_discharge_current).state);              
+# curl -X POST -d "" "http://esp32-sandbox.local/select/batterymode/set?option=Hold"
+captive_portal:
+#mqtt:
+#  broker: !secret mqtt_host
+#  port: 1883
+#  topic_prefix: pv/deye10k
+#  username: !secret mqtt_username
+#  password: !secret mqtt_password
+#  id: mqtt_client
+
+
+uart:
+  - id: uartdeye
+    tx_pin: 27
+    rx_pin: 26
+    baud_rate: 9600
+    rx_buffer_size: 256
+
+  - id: seplos
+    tx_pin: GPIO17
+    rx_pin: GPIO16
+    baud_rate: 19200
+    rx_buffer_size: 2048
+
+modbus:
+  - id: modbus1
+    uart_id: uartdeye
+
+modbus_controller:
+  - id: ${modbus_controller_id}
+    address: 0x01
+    modbus_id: modbus1
+    setup_priority: -10
+    update_interval: ${modbus_update_interval}
+    command_throttle: ${query_throttle}
+
+
+seplos_parser:
+  id: seplos_v3
+  bms_count: 2  # Anzahl der Akku's (max. 16)
+  update_interval: ${time}
+  uart_id: seplos  # SeplosParser verwendet diese UART ID
+
+sensor:
+  - platform: template
+    name: "Today Max SoC"
+    unit_of_measurement: "%"
+    device_class: battery
+    state_class: measurement
+    id: max_soc_sensor
+    lambda: |-
+      return id(max_soc);
+  - platform: template
+    name: "Target SoC"
+    unit_of_measurement: "%"
+    device_class: battery
+    state_class: measurement
+    id: target_soc_sensor
+    lambda: |-
+      return id(target_soc);
+      
+ # bms0
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 pack_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 current
+    unit_of_measurement: "A"
+    accuracy_decimals: 2
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 remaining_capacity
+    unit_of_measurement: "Ah"
+    accuracy_decimals: 2
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 total_capacity
+    unit_of_measurement: "Ah"
+    accuracy_decimals: 2
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 total_discharge_capacity
+    unit_of_measurement: "Ah"
+    accuracy_decimals: 0
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 soc
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 soh
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cycle_count
+    unit_of_measurement: "cycles"
+    accuracy_decimals: 0
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 average_cell_voltage
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 average_cell_temp
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 max_cell_voltage
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 min_cell_voltage
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+        - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 max_cell_temp
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 min_cell_temp
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 maxdiscurt
+    unit_of_measurement: A
+    accuracy_decimals: 2
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 maxchgcurt
+    unit_of_measurement: A
+    accuracy_decimals: 2
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_1
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_2
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_3
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_4
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_5
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_6
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_7
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_8
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_9
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_10
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_11
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_12
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_13
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_14
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_15
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_16
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_temp_1
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_temp_2
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_temp_3
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_temp_4
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 case_temp
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 power_temp
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+ # bms1
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 pack_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 current
+    unit_of_measurement: "A"
+    accuracy_decimals: 2
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 remaining_capacity
+    unit_of_measurement: "Ah"
+    accuracy_decimals: 2
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 total_capacity
+    unit_of_measurement: "Ah"
+    accuracy_decimals: 2
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 total_discharge_capacity
+    unit_of_measurement: "Ah"
+    accuracy_decimals: 0
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 soc
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 soh
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cycle_count
+    unit_of_measurement: "cycles"
+    accuracy_decimals: 0
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 average_cell_voltage
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 average_cell_temp
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 max_cell_voltage
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 min_cell_voltage
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+        - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 max_cell_temp
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 min_cell_temp
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 maxdiscurt
+    unit_of_measurement: A
+    accuracy_decimals: 2
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 maxchgcurt
+    unit_of_measurement: A
+    accuracy_decimals: 2
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_1
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_2
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_3
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_4
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_5
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_6
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_7
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_8
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_9
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_10
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_11
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_12
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_13
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_14
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_15
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_16
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_temp_1
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_temp_2
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_temp_3
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_temp_4
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 case_temp
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 power_temp
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    filters:
+      - throttle: ${time}s
+ # Template Addition beider Strings
+  - platform: template
+    name: "${device_type}-PV Total Power"
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: "measurement"
+    accuracy_decimals: 0
+    lambda: |-
+      return (int)((id(${device_type}_PV1_Power).state + id(${device_type}_PV2_Power).state));
+    update_interval: 5s
+
+ # Deye
+
+  - platform: modbus_controller #${device_type}-køleplade temeratur
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Heat sink temperature"
+    id: ${device_type}_koleplade_temeratur
+    register_type: holding
+    address: 541
+    unit_of_measurement: "°C"
+    value_type: S_WORD
+    accuracy_decimals: 2
+    filters:
+      - offset: -1000
+      - multiply:  0.1
+ 
+  - platform: modbus_controller #${device_type}-load frequency
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-load frequency"
+    id: ${device_type}_load_frequency
+    register_type: holding
+    address: 655
+    unit_of_measurement: "Hz"
+    state_class: "measurement"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+    value_type: U_WORD
+ 
+  - platform: modbus_controller #${device_type}-inverter-frequency
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-inverter-frequency"
+    id: ${device_type}_inverter_frequency
+    register_type: holding
+    address: 638
+    unit_of_measurement: "Hz"
+    state_class: "measurement"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-PV1 Power"
+    id: ${device_type}_PV1_Power
+    register_type: holding
+    address: 672
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-PV2 Power"
+    id: ${device_type}_PV2_Power
+    register_type: holding
+    address: 673
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-PV1 Voltage"
+    id: ${device_type}_PV1_Voltage
+    register_type: holding
+    address: 676
+    unit_of_measurement: "V"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-PV2 Voltage"
+    id: ${device_type}_PV2_Voltage
+    register_type: holding
+    address: 678
+    unit_of_measurement: "V"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-PV1 Current"
+    id: ${device_type}_PV1_Current
+    register_type: holding
+    address: 677
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-PV2 Current"
+    id: ${device_type}_PV2_Current
+    register_type: holding
+    address: 679
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD  
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Daily Production"
+    id: ${device_type}_Daily_Production
+    register_type: holding
+    address: 529
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD  
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Total PV Production"  #Cumulative Production 
+    id: ${device_type}_Total_PV_Production
+    register_type: holding
+    address: 534
+    unit_of_measurement: "kWh"
+    state_class: "measurement"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_DWORD_R
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Total Grid Power"   # Grid side total power
+    id: ${device_type}_Total_Grid_Power
+    register_type: holding
+    address: 625
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Daily Energy Bought"
+    id: ${device_type}_Daily_Energy_Bought
+    register_type: holding
+    address: 520
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_WORD
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Daily Energy Sold"
+    id: ${device_type}_Daily_Energy_Sold
+    register_type: holding
+    address: 521
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_WORD
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Total Energy Bought"
+    id: ${device_type}_Total_Energy_Bought
+    register_type: holding
+    address: 522
+    unit_of_measurement: "kWh"
+ #    state_class: "total_increasing"
+    state_class: "measurement"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_WORD
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Total Energy Sold"
+    id: ${device_type}_Total_Energy_Sold
+    register_type: holding
+    address: 524
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_WORD
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller #Total Consumption
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Total Consumption"
+    id: ${device_type}_Total_Consumption
+    register_type: holding
+    address: 527
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 2
+    value_type: U_DWORD_R
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-active power generation of today"
+    id: ${device_type}_active_power_generation_of_today
+    register_type: holding
+    address: 502
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: S_WORD
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Load Energy today"
+    id: ${device_type}_load_energy_today
+    register_type: holding
+    address: 526
+    unit_of_measurement: "kWh"
+ #    state_class: "total_increasing"
+    state_class: "measurement"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: S_WORD
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Total Load Energy"
+    id: ${device_type}_total_load_energy
+    register_type: holding
+    address: 527
+    unit_of_measurement: "kWh"
+ #    state_class: "total_increasing"
+    state_class: "measurement"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_DWORD_R
+ #    value_type: S_WORD
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Grid Current L1"
+    id: ${device_type}_Grid_Current_L1
+    register_type: holding
+    address: 630
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.01
+    value_type: S_WORD  
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Grid Current L2"
+    id: ${device_type}_Grid_Current_L2
+    register_type: holding
+    address: 631
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.01
+    value_type: S_WORD   
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Grid Current L3"
+    id: ${device_type}_Grid_Current_L3
+    register_type: holding
+    address: 632
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.01
+    value_type: S_WORD   
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Grid Voltage L1"
+    id: ${device_type}_Grid_Voltage_L1
+    register_type: holding
+    address: 598
+    unit_of_measurement: "V"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD     
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Grid Voltage L2"
+    id: ${device_type}_Grid_Voltage_L2
+    register_type: holding
+    address: 599
+    unit_of_measurement: "V"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD     
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Grid Voltage L3"
+    id: ${device_type}_Grid_Voltage_L3
+    register_type: holding
+    address: 600
+    unit_of_measurement: "V"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    filters:
+      - multiply: 0.1
+    value_type: U_WORD  
+
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Internal CT L1 Power"
+    id: ${device_type}_Internal_CT_L1_Power
+    register_type: holding
+    address: 604
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD  
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Internal CT L2 Power"
+    id: ${device_type}_Internal_CT_L2_Power
+    register_type: holding
+    address: 605
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD  
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Internal CT L3 Power"
+    id: ${device_type}_Internal_CT_L3_Power
+    register_type: holding
+    address: 606
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD  
+ 
+  - platform: modbus_controller  # Grid internal - total active power
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Internal total Power" 
+    id: ${device_type}_Internal_total_Power
+    register_type: holding
+    address: 607
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD   
+ 
+  - platform: modbus_controller  # Grid Current L1
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Out of Grid Current L1" 
+    id: ${device_type}_Out_of_Grid_Current_L1
+    register_type: holding
+    address: 613
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+    value_type: S_WORD   
+ 
+  - platform: modbus_controller  # Grid Current L2
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Out of Grid Current L2" 
+    id: ${device_type}_Out_of_Grid_Current_L2
+    register_type: holding
+    address: 614
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+    value_type: S_WORD   
+ 
+  - platform: modbus_controller  # Grid Current L3
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Out of Grid Current L3" 
+    id: ${device_type}_Out_of_Grid_Current_L3
+    register_type: holding
+    address: 615
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+    value_type: S_WORD   
+ 
+
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-External CT L1 Power"
+    id: ${device_type}_External_CT_L1_Power
+    register_type: holding
+    address: 616
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD  
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-External CT L2 Power"
+    id: ${device_type}_External_CT_L2_Power
+    register_type: holding
+    address: 617
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD  
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-External CT L3 Power"
+    id: ${device_type}_External_CT_L3_Power
+    register_type: holding
+    address: 618
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD     
+ 
+  - platform: modbus_controller  
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Out-of-grid–total power"
+    id: ${device_type}_out_of_grid_total_power
+    register_type: holding
+    address: 619
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD
+    
+  - platform: modbus_controller # Load totalpower
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Load totalpower" 
+    id: ${device_type}_Load_totalpower
+    register_type: holding
+    address: 653
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD
+ 
+  - platform: modbus_controller # Load totalpower
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Generator totalpower" 
+    id: ${device_type}_Generator_totalpower
+    register_type: holding
+    address: 667
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD
+ 
+
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Warning1"
+    id:  ${device_type}_Warning1
+    register_type: holding
+    address: 553
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Warning2"
+    id:  ${device_type}_Warning2
+    register_type: holding
+    address: 554
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Warning3"
+    id:  ${device_type}_Warning3
+    register_type: holding
+    address: 555
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Error1"
+    id:  ${device_type}_Error1
+    register_type: holding
+    address: 556
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Error2"
+    id:  ${device_type}_Error2
+    register_type: holding
+    address: 557
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Error3"
+    id:  ${device_type}_Error3
+    register_type: holding
+    address: 558
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Failure status of communication board"
+    id:  ${device_type}_Failure_status_of_communication_board
+    register_type: holding
+    address: 548
+    accuracy_decimals: 0
+    value_type: U_WORD
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Minimum insulation impedance"
+    id:  ${device_type}_Minimum_insulation_impedance
+    register_type: holding
+    unit_of_measurement: "kΩ"
+    state_class: "measurement"
+    address: 65
+    accuracy_decimals: 0
+    value_type: U_WORD
+    filters:
+      - multiply: 0.1
+ 
+ # Batterie
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Today charge of the battery"
+    id:  ${device_type}_Today_charge_of_the_battery
+    register_type: holding
+    address: 514
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_WORD
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Today discharge of the battery"
+    id:  ${device_type}_Today_discharge_of_the_battery
+    register_type: holding
+    address: 515
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_WORD
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    skip_updates: 5
+    name: "${device_type}-Total charge of the battery"
+    id:  ${device_type}_battery_total_charge
+    register_type: holding
+    address: 516
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_DWORD_R
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    skip_updates: 5
+    name: "${device_type}-Total discharge of the battery"
+    id:  ${device_type}_battery_total_discharge
+    register_type: holding
+    address: 518
+    unit_of_measurement: "kWh"
+    state_class: "total_increasing"
+    device_class: energy
+    accuracy_decimals: 1
+    value_type: U_DWORD_R 
+    filters:
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-battery temperature"
+    id:  ${device_type}_battery_temperature
+    register_type: holding
+    address: 586
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    value_type: U_WORD 
+    filters:
+      - offset: -1000
+      - multiply: 0.1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-battery voltage"
+    id: ${device_type}_battery_voltage
+    register_type: holding
+    address: 587
+    unit_of_measurement: "V"
+    state_class: "measurement"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-battery capacity"
+    id: ${device_type}_battery_capacity
+    register_type: holding
+    address: 588
+    unit_of_measurement: "%"
+    state_class: "measurement"
+    accuracy_decimals: 1
+    value_type: U_WORD
+    on_value:
+      then:
+        - lambda: |-
+            if (id(batterylife_enabled).state) {
+              if (id(${device_type}_battery_capacity).state > id(max_soc)) {
+                id(max_soc) = id(${device_type}_battery_capacity).state;
+              }
+            }    
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Battery output power"
+    id: ${device_type}_Battery_output_power
+    register_type: holding
+    address: 590
+    unit_of_measurement: "W"
+    state_class: "measurement"
+    accuracy_decimals: 0
+    value_type: S_WORD 
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-Battery output current"
+    id: ${device_type}_Battery_output_current
+    register_type: holding
+    address: 591
+    unit_of_measurement: "A"
+    state_class: "measurement"
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01
+    value_type: S_WORD
+
+
+
+text_sensor:
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Running_Status
+    bitmask: 0
+    register_type: holding
+    address: 500
+    raw_encode: HEXBYTES
+    name: ${device_type}-Running Status
+    lambda: |-
+      uint16_t value = modbus_controller::word_from_hex_str(x, 0);
+      switch (value) {
+        case 0: return std::string("standby");
+        case 1: return std::string("selfcheck");
+        case 2: return std::string("normal");
+        case 3: return std::string("alarm");
+        case 4: return std::string("fault");
+        default: return std::string("----");
+      }
+      return x;
+
+#  - platform: modbus_controller
+#    modbus_controller_id: ${modbus_controller_id}
+#    name: "${device_type}-system time"
+#    id: ${device_type}_system_time
+#    register_type: holding
+#    address: 62
+#    register_count: 3
+#    response_size: 6
+#    lambda: |-
+#      int jahr = (int)data[item->offset]+2000;
+#      int monat = (int)data[item->offset + 1];
+#      int tag = (int)data[item->offset + 2];
+#      int stunde = (int)data[item->offset + 3];
+#      int minute = (int)data[item->offset + 4];
+#      int sekunde = (int)data[item->offset + 5];
+#      char buffer[20];
+#      sprintf(buffer, "%d-%d-%d %d:%d:%d", jahr, monat, tag, stunde, minute, sekunde);
+#      return {buffer};
+
+
+ # bms0
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 system_status
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 active_balancing_cells
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_temperature_alarms
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 cell_voltage_alarms
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 FET_status
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 active_alarms
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms0 active_protections
+ # bms1
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 system_status
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 active_balancing_cells
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_temperature_alarms
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 cell_voltage_alarms
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 FET_status
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 active_alarms
+  - platform: seplos_parser
+    seplos_parser_id: seplos_v3
+    name: bms1 active_protections
+ 
+ 
+number:
+
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Battery_equalization_voltage
+    name: "${device_type}-Battery equalization voltage"
+    address: 99
+    unit_of_measurement: V
+    value_type: U_WORD
+    max_value: 55.4
+    min_value: 53.0
+    step: 0.1
+    mode: box
+    lambda: "return x * 0.01;"
+    write_lambda: "return x * 100;"
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Battery_absorption_voltage
+    name: "${device_type}-Battery absorption voltage"
+    address: 100
+    unit_of_measurement: V
+    value_type: U_WORD
+    max_value: 57.6
+    min_value: 53.0
+    step: 0.1
+    mode: box
+    lambda: "return x * 0.01;"
+    write_lambda: "return x * 100;"
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Battery_float_voltage
+    name: "${device_type}-Battery float voltage"
+    address: 101
+    unit_of_measurement: V
+    value_type: U_WORD
+    max_value: 55.4
+    min_value: 53.0
+    step: 0.1
+    mode: box
+    lambda: "return x * 0.01;"
+    write_lambda: "return x * 100;"
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Maximum_battery_charge_current
+    name: "${device_type}-Maximum battery charge current"
+    address: 108
+    unit_of_measurement: A
+    value_type: U_WORD
+    force_new_range: true
+    max_value: 200
+    min_value: 0
+#    step: 1
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Maximum_battery_discharge_current
+    name: "${device_type}-Maximum battery discharge current"
+    address: 109
+    unit_of_measurement: A
+    value_type: U_WORD
+    max_value: 240
+    min_value: 0
+    force_new_range: true    
+#    step: 1
+    on_value:
+      then:
+        - globals.set:
+            id: helper_discharge_current
+            value: !lambda |-
+              if(x > 5) {
+                return (int)x;
+              } else if (x == 5) {
+                return id(helper_discharge_current);
+              } else {
+                return id(helper_discharge_current)*-1;
+              }
+
+
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Maximum_battery_grid_charge_current
+    name: "${device_type}-Maximum battery_grid charge current"
+    address: 128
+    unit_of_measurement: A
+    value_type: U_WORD
+    force_new_range: true
+
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_1
+    name: "${device_type}-Time point 1 start"
+    address: 148
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_2
+    name: "${device_type}-Time point 2 start"
+    address: 149
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_3
+    name: "${device_type}-Time point 3 start"
+    address: 150
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_4
+    name: "${device_type}-Time point 4 start"
+    address: 151
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_5
+    name: "${device_type}-Time point 5 start"
+    address: 152
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_6
+    name: "${device_type}-Time point 6 start"
+    address: 153
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_1_power
+    name: "${device_type}-Time point 1 power"
+    unit_of_measurement: W
+    address: 154
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_2_power
+    name: "${device_type}-Time point 2 power"
+    unit_of_measurement: W
+    address: 155
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_3_power
+    name: "${device_type}-Time point 3 power"
+    unit_of_measurement: W
+    address: 156
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_4_power
+    name: "${device_type}-Time point 4 power"
+    unit_of_measurement: W
+    address: 157
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_5_power
+    name: "${device_type}-Time point 5 power"
+    unit_of_measurement: W
+    address: 158
+    value_type: U_WORD
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_6_power
+    name: "${device_type}-Time point 6 power"
+    unit_of_measurement: W
+    address: 159
+    value_type: U_WORD
+
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_1_capacity
+    name: "${device_type}-Time point 1 capacity"
+    unit_of_measurement: "%"
+    address: 166
+    min_value: 0
+    max_value: 100
+    step: 5
+    value_type: U_WORD
+    force_new_range: true
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_2_capacity
+    name: "${device_type}-Time point 2 capacity"
+    unit_of_measurement: "%"
+    address: 167
+    min_value: 0
+    max_value: 100
+    step: 5
+    value_type: U_WORD
+    force_new_range: true
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_3_capacity
+    name: "${device_type}-Time point 3 capacity"
+    unit_of_measurement: "%"
+    address: 168
+    min_value: 0
+    max_value: 100
+    step: 5
+    value_type: U_WORD
+    force_new_range: true
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_4_capacity
+    name: "${device_type}-Time point 4 capacity"
+    unit_of_measurement: "%"
+    address: 169
+    min_value: 0
+    max_value: 100
+    step: 5
+    value_type: U_WORD
+    force_new_range: true
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_5_capacity
+    name: "${device_type}-Time point 5 capacity"
+    unit_of_measurement: "%"
+    address: 170
+    min_value: 0
+    max_value: 100
+    step: 5
+    value_type: U_WORD
+    force_new_range: true
+    
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    id: ${device_type}_Time_point_6_capacity
+    name: "${device_type}-Time point 6 capacity"
+    unit_of_measurement: "%"
+    address: 171
+    min_value: 0
+    max_value: 100
+    step: 5
+    value_type: U_WORD
+    force_new_range: true
+    
+
+switch:
+  - platform: template
+    name: "Battery Life enabled"
+    id: batterylife_enabled
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+  - platform: restart
+    name: "Restart ESP32-Deye Bridge"
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}_Solar_sell
+    register_type: holding
+    address: 145
+    bitmask: 1
+    entity_category: config
+    icon: "mdi:toggle-switch"
+
+  - platform: modbus_controller
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Grid_Charge
+    register_type: holding
+    address: 130
+    bitmask: 1
+    entity_category: config
+    icon: "mdi:toggle-switch"
+ 
+  - platform: modbus_controller  # Advanced peak shaving and valley filling function enabled
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Time of Use 
+    id: ${device_type}_Time_of_Use
+    register_type: holding
+    address: 146
+    bitmask: 1
+    entity_category: config
+    icon: "mdi:toggle-switch"
+ 
+  - platform: modbus_controller  # Time point 1 charge enable - grid charging enable
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Time point 1 charge enable
+    register_type: holding
+    address: 172
+    bitmask: 1   # 2 hvis man ønsker Gen charging enabel i sted for.
+    entity_category: config
+    icon: "mdi:toggle-switch"
+ 
+  - platform: modbus_controller  # Time point 2 charge enable - grid charging enable
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Time point 2 charge enable
+    register_type: holding
+    address: 173
+    bitmask: 1    # 2 hvis man ønsker Gen charging enabel i sted for.
+    entity_category: config
+    icon: "mdi:toggle-switch"
+ 
+  - platform: modbus_controller  # Time point 3 charge enable - grid charging enable
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Time point 3 charge enable
+    register_type: holding
+    address: 174
+    bitmask: 1    # 2 hvis man ønsker Gen charging enabel i sted for.
+    entity_category: config
+    icon: "mdi:toggle-switch"
+ 
+  - platform: modbus_controller  # Time point 4 charge enable - grid charging enable
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Time point 4 charge enable
+    register_type: holding
+    address: 175
+    bitmask: 1    # 2 hvis man ønsker Gen charging enabel i sted for.
+    entity_category: config
+    icon: "mdi:toggle-switch"
+ 
+  - platform: modbus_controller  # Time point 5 charge enable - grid charging enable
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Time point 5 charge enable
+    register_type: holding
+    address: 176
+    bitmask: 1    # 2 hvis man ønsker Gen charging enabel i sted for.
+    entity_category: config
+    icon: "mdi:toggle-switch"
+ 
+  - platform: modbus_controller  # Time point 6 charge enable - grid charging enable
+    use_write_multiple: true
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Time point 6 charge enable
+    register_type: holding
+    address: 177
+    bitmask: 1    # 2 hvis man ønsker Gen charging enabel i sted for.
+    entity_category: config
+    icon: "mdi:toggle-switch"
+    
+      
+binary_sensor:
+
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-AC INV relay # bit 0
+    id: ${device_type}_AC_INV_relay
+    register_type: holding
+    address: 552
+    bitmask: 0x1
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-AC Load relay Reserved # bit 1
+    id: ${device_type}_AC_Load_relay_Reserved
+    register_type: holding
+    address: 552
+    bitmask: 0x2
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-AC grid relay # bit 2
+    id: ${device_type}_AC_grid_relay
+    register_type: holding
+    address: 552
+    bitmask: 0x4
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-AC Generator relay # bit 3
+    id: ${device_type}_AC_Generator_relay
+    register_type: holding
+    address: 552
+    bitmask: 0x8
+ 
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: ${device_type}-Turn off-on status   #The lower 4 bits represent the switch signal
+    id: ${device_type}_Turn_off_on_status
+    register_type: holding
+    address: 551
+    bitmask: 0x1
+ 
