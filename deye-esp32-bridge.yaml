@@ -22,6 +22,14 @@ globals:
      type: float
      restore_value: yes
      initial_value: '30.0'
+   - id: helper_charge_current_before_throttle
+     type: int
+     restore_value: yes
+     initial_value: '100'
+   - id: charge_throttle_active
+     type: bool
+     restore_value: yes
+     initial_value: 'false'
 substitutions:
   bms_name: seplos-bms
   modbus_update_interval: "10s"
@@ -190,6 +198,28 @@ switch:
     id: batterylife_enabled
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
+  - platform: template
+    name: "SoC Charge Throttle enabled"
+    id: soc_charge_throttle_enabled
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    on_turn_off:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(charge_throttle_active);'
+            then:
+              - lambda: |-
+                  id(charge_throttle_active) = false;
+                  ESP_LOGI("SoC Throttle", "Disabled - restoring charge current to %dA", id(helper_charge_current_before_throttle));
+              - delay: 200ms
+              - number.set:
+                  id: ${device_type}_Maximum_battery_charge_current
+                  value: !lambda |-
+                    return id(helper_charge_current_before_throttle);
+              - delay: 500ms
+              - lambda: |-
+                  ESP_LOGI("SoC Throttle", "Current charge setting: %.0fA", id(${device_type}_Maximum_battery_charge_current).state);
   - platform: restart
     name: "Restart ESP32-Deye Bridge"
   - platform: modbus_controller
@@ -365,6 +395,30 @@ text_sensor:
 #      return {buffer};
       
 number:
+  - platform: template
+    name: "SoC Throttle Threshold"
+    id: soc_throttle_threshold
+    unit_of_measurement: "%"
+    min_value: 50
+    max_value: 100
+    step: 1
+    initial_value: 90
+    optimistic: true
+    restore_value: true
+    icon: "mdi:battery-alert"
+
+  - platform: template
+    name: "SoC Throttle Charge Current"
+    id: soc_throttle_charge_current
+    unit_of_measurement: "A"
+    min_value: 1
+    max_value: 100
+    step: 1
+    initial_value: 5
+    optimistic: true
+    restore_value: true
+    icon: "mdi:current-dc"
+
   - platform: modbus_controller
     use_write_multiple: true
     modbus_controller_id: ${modbus_controller_id}
@@ -1349,6 +1403,49 @@ sensor:
                 id(max_soc) = id(${device_type}_battery_capacity).state;
               }
             }
+        - if:
+            condition:
+              lambda: |-
+                return id(soc_charge_throttle_enabled).state &&
+                       id(${device_type}_battery_capacity).state >= id(soc_throttle_threshold).state &&
+                       !id(charge_throttle_active);
+            then:
+              - lambda: |-
+                  id(helper_charge_current_before_throttle) = (int)id(${device_type}_Maximum_battery_charge_current).state;
+                  id(charge_throttle_active) = true;
+                  ESP_LOGI("SoC Throttle", "SoC >= %.0f%% - throttling charge current to %.0fA (was %dA)",
+                    id(soc_throttle_threshold).state, id(soc_throttle_charge_current).state, id(helper_charge_current_before_throttle));
+              # Delay to avoid bus contention
+              - delay: 200ms
+              - number.set:
+                  id: ${device_type}_Maximum_battery_charge_current
+                  value: !lambda |-
+                    return id(soc_throttle_charge_current).state;
+              # Verification after write
+              - delay: 500ms
+              - lambda: |-
+                  ESP_LOGI("SoC Throttle", "Current charge setting: %.0fA", id(${device_type}_Maximum_battery_charge_current).state);
+        - if:
+            condition:
+              lambda: |-
+                return id(soc_charge_throttle_enabled).state &&
+                       id(${device_type}_battery_capacity).state < id(soc_throttle_threshold).state &&
+                       id(charge_throttle_active);
+            then:
+              - lambda: |-
+                  id(charge_throttle_active) = false;
+                  ESP_LOGI("SoC Throttle", "SoC < %.0f%% - restoring charge current to %dA",
+                    id(soc_throttle_threshold).state, id(helper_charge_current_before_throttle));
+              # Delay to avoid bus contention
+              - delay: 200ms
+              - number.set:
+                  id: ${device_type}_Maximum_battery_charge_current
+                  value: !lambda |-
+                    return id(helper_charge_current_before_throttle);
+              # Verification after write
+              - delay: 500ms
+              - lambda: |-
+                  ESP_LOGI("SoC Throttle", "Current charge setting: %.0fA", id(${device_type}_Maximum_battery_charge_current).state);
  
   - platform: modbus_controller
     modbus_controller_id: ${modbus_controller_id}
