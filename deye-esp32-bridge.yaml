@@ -151,6 +151,15 @@ time:
                     id: ${device_type}_Time_point_6_capacity
                     value: !lambda |-
                         return id(target_soc);
+      - seconds: 0
+        minutes: 0
+        hours: 3
+        then:
+          - if:
+              condition:
+                switch.is_on: ${device_type}_time_sync_enabled
+              then:
+                - button.press: ${device_type}_time_sync
 select:
   - platform: template
     name: BatteryMode
@@ -190,6 +199,12 @@ switch:
     id: batterylife_enabled
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
+  - platform: template
+    name: "${device_type}-Time Sync Enabled"
+    id: ${device_type}_time_sync_enabled
+    icon: "mdi:auto-fix"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
   - platform: restart
     name: "Restart ESP32-Deye Bridge"
   - platform: modbus_controller
@@ -283,6 +298,42 @@ switch:
     entity_category: config
     icon: "mdi:toggle-switch"
 
+button:
+  - platform: template
+    name: "${device_type}-Time Sync"
+    id: ${device_type}_time_sync
+    icon: "mdi:clock-outline"
+    on_press:
+      then:
+        - lambda: |-
+            esphome::modbus_controller::ModbusController *controller = id(${modbus_controller_id});
+            time_t now = ::time(nullptr);
+            struct tm *time_info = ::localtime(&now);
+            int seconds = time_info->tm_sec;
+            int minutes = time_info->tm_min;
+            int hour = time_info->tm_hour;
+            int day = time_info->tm_mday;
+            int month = time_info->tm_mon + 1;
+            int year = time_info->tm_year + 1900;
+            if (year > 2020) {
+              if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minutes > 59 || seconds > 59) {
+                ESP_LOGE("TimeSync", "Safety check failed: invalid time values");
+                return;
+              }
+              std::vector<uint16_t> rtc_data = {
+                uint16_t(((year - 2000) << 8) | month),
+                uint16_t((day << 8) | hour),
+                uint16_t((minutes << 8) | seconds)
+              };
+              auto set_rtc_command = esphome::modbus_controller::ModbusCommandItem::create_write_multiple_command(
+                controller, 62, rtc_data.size(), rtc_data);
+              controller->queue_command(set_rtc_command);
+              ESP_LOGI("TimeSync", "Deye RTC set to %04d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minutes, seconds);
+              id(sync_status_display).publish_state(str_sprintf("%04d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minutes, seconds));
+            } else {
+              ESP_LOGW("TimeSync", "RTC sync failed - no valid NTP time");
+            }
+
 binary_sensor:
   - platform: modbus_controller
     modbus_controller_id: ${modbus_controller_id}
@@ -345,24 +396,61 @@ text_sensor:
       }
       return x;
 
-#  - platform: modbus_controller
-#    modbus_controller_id: ${modbus_controller_id}
-#    name: "${device_type}-system time"
-#    id: ${device_type}_system_time
-#    register_type: holding
-#    address: 62
-#    register_count: 3
-#    response_size: 6
-#    lambda: |-
-#      int jahr = (int)data[item->offset]+2000;
-#      int monat = (int)data[item->offset + 1];
-#      int tag = (int)data[item->offset + 2];
-#      int stunde = (int)data[item->offset + 3];
-#      int minute = (int)data[item->offset + 4];
-#      int sekunde = (int)data[item->offset + 5];
-#      char buffer[20];
-#      sprintf(buffer, "%d-%d-%d %d:%d:%d", jahr, monat, tag, stunde, minute, sekunde);
-#      return {buffer};
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    name: "${device_type}-System Time"
+    id: ${device_type}_system_time
+    register_type: holding
+    address: 62
+    register_count: 3
+    response_size: 6
+    lambda: |-
+      int year = (int)data[item->offset] + 2000;
+      int month = (int)data[item->offset + 1];
+      int day = (int)data[item->offset + 2];
+      int hour = (int)data[item->offset + 3];
+      int minute = (int)data[item->offset + 4];
+      int second = (int)data[item->offset + 5];
+      char buffer[20];
+      sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minute, second);
+      return {buffer};
+    on_value:
+      then:
+        - lambda: |-
+            // Automatic time sync: if enabled, check drift and sync if needed
+            if (!id(${device_type}_time_sync_enabled).state) return;
+            time_t now = ::time(nullptr);
+            struct tm *ntp_time = ::localtime(&now);
+            int ntp_year = ntp_time->tm_year + 1900;
+            if (ntp_year <= 2020) return;  // NTP not yet synchronized
+
+            int inv_year = (int)data[item->offset] + 2000;
+            int inv_month = (int)data[item->offset + 1];
+            int inv_day = (int)data[item->offset + 2];
+            int inv_hour = (int)data[item->offset + 3];
+            int inv_minute = (int)data[item->offset + 4];
+            int inv_second = (int)data[item->offset + 5];
+
+            struct tm inv_tm = {};
+            inv_tm.tm_year = inv_year - 1900;
+            inv_tm.tm_mon = inv_month - 1;
+            inv_tm.tm_mday = inv_day;
+            inv_tm.tm_hour = inv_hour;
+            inv_tm.tm_min = inv_minute;
+            inv_tm.tm_sec = inv_second;
+            inv_tm.tm_isdst = -1;
+            time_t inv_time = mktime(&inv_tm);
+
+            double diff = difftime(now, inv_time);
+            if (abs((int)diff) > 30) {
+              ESP_LOGI("TimeSync", "Drift detected: %.0f seconds, triggering sync", diff);
+              id(${device_type}_time_sync).press();
+            }
+
+  - platform: template
+    name: "${device_type}-Time Sync Status"
+    id: sync_status_display
+    icon: "mdi:clock-check"
       
 number:
   - platform: modbus_controller
