@@ -307,14 +307,17 @@ button:
       then:
         - lambda: |-
             esphome::modbus_controller::ModbusController *controller = id(${modbus_controller_id});
-            time_t now = ::time(nullptr);
-            struct tm *time_info = ::localtime(&now);
-            int seconds = time_info->tm_sec;
-            int minutes = time_info->tm_min;
-            int hour = time_info->tm_hour;
-            int day = time_info->tm_mday;
-            int month = time_info->tm_mon + 1;
-            int year = time_info->tm_year + 1900;
+            auto time_now = id(sntp_time).now();
+            if (!time_now.is_valid()) {
+              ESP_LOGW("TimeSync", "RTC sync failed - no valid NTP time");
+              return;
+            }
+            int seconds = time_now.second;
+            int minutes = time_now.minute;
+            int hour = time_now.hour;
+            int day = time_now.day_of_month;
+            int month = time_now.month;
+            int year = time_now.year;
             if (year > 2020) {
               if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minutes > 59 || seconds > 59) {
                 ESP_LOGE("TimeSync", "Safety check failed: invalid time values");
@@ -330,8 +333,6 @@ button:
               controller->queue_command(set_rtc_command);
               ESP_LOGI("TimeSync", "Deye RTC set to %04d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minutes, seconds);
               id(sync_status_display).publish_state(str_sprintf("%04d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minutes, seconds));
-            } else {
-              ESP_LOGW("TimeSync", "RTC sync failed - no valid NTP time");
             }
 
 binary_sensor:
@@ -419,10 +420,10 @@ text_sensor:
         - lambda: |-
             // Automatic time sync: if enabled, check drift and sync if needed
             if (!id(${device_type}_time_sync_enabled).state) return;
-            time_t now = ::time(nullptr);
-            struct tm *ntp_time = ::localtime(&now);
-            int ntp_year = ntp_time->tm_year + 1900;
-            if (ntp_year <= 2020) return;  // NTP not yet synchronized
+            auto ntp_now = id(sntp_time).now();
+            if (!ntp_now.is_valid()) return;  // NTP not yet synchronized
+            int ntp_year = ntp_now.year;
+            if (ntp_year <= 2020) return;
 
             int inv_year = (int)data[item->offset] + 2000;
             int inv_month = (int)data[item->offset + 1];
@@ -440,8 +441,9 @@ text_sensor:
             inv_tm.tm_sec = inv_second;
             inv_tm.tm_isdst = -1;
             time_t inv_time = mktime(&inv_tm);
+            time_t ntp_timestamp = ntp_now.timestamp;
 
-            double diff = difftime(now, inv_time);
+            double diff = difftime(ntp_timestamp, inv_time);
             if (abs((int)diff) > 30) {
               ESP_LOGI("TimeSync", "Drift detected: %.0f seconds, triggering sync", diff);
               id(${device_type}_time_sync).press();
