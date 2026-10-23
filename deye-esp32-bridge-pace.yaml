@@ -269,7 +269,7 @@ text_sensor:
       };
       std::string values = "";
 
-      uint16_t mask = modbus_controller::word_from_hex_str(x, 0);
+      uint16_t mask = modbus::helpers::word_from_hex_str(x, 0);
       if (mask) {
         for (int i = 0; i < WARNINGS_SIZE; i++) {
           if (mask & (1 << i)) {
@@ -314,7 +314,7 @@ text_sensor:
       };
       std::string values = "";
 
-      uint16_t mask = modbus_controller::word_from_hex_str(x, 0);
+      uint16_t mask = modbus::helpers::word_from_hex_str(x, 0);
       if (mask) {
         for (int i = 0; i < PROTECTIONS_SIZE; i++) {
           if (mask & (1 << i)) {
@@ -351,7 +351,7 @@ text_sensor:
       };
       std::string values = "";
 
-      uint16_t mask = modbus_controller::word_from_hex_str(x, 0);
+      uint16_t mask = modbus::helpers::word_from_hex_str(x, 0);
       if (mask) {
         for (int i = 0; i < FAULTS_SIZE; i++) {
           if (mask & (1 << i)) {
@@ -406,7 +406,7 @@ text_sensor:
     raw_encode: HEXBYTES
     name: ${device_type}-Running Status
     lambda: |-
-      uint16_t value = modbus_controller::word_from_hex_str(x, 0);
+      uint16_t value = modbus::helpers::word_from_hex_str(x, 0);
       switch (value) {
         case 0: return std::string("standby");
         case 1: return std::string("selfcheck");
