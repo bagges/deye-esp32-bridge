@@ -19,7 +19,8 @@ substitutions:
   device_type: sun10k
   device_description: "Esphome component for Deye sun-10k-sg04lp3"
   modbus_controller_id: sg04lp3
-  external_components_source1: github://syssi/esphome-seplos-bms@main
+  # pinned: upstream @main requires ESPHome 2026.1.0; this commit is the last one compatible with Device Builder 10.0 (ESPHome 2025.10)
+  external_components_source1: github://syssi/esphome-seplos-bms@33fa70b8bce3af621e241dc4e31a2b283f28e9d8
   external_components_source2: github://DpunktS/seplos_v3_sniffer
 
 esp32:
@@ -46,8 +47,6 @@ globals:
 
 # Enable Home Assistant API
 api:
-  encryption:
-    key: ""
 
 ota:
   - platform: esphome
