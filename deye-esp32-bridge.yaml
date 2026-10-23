@@ -160,6 +160,20 @@ time:
                     value: !lambda |-
                         return id(target_soc);
 select:
+  - platform: modbus_controller
+    modbus_controller_id: ${modbus_controller_id}
+    use_write_multiple: true
+    name: "${device_type}-Work Mode"
+    id: ${device_type}_work_mode
+    address: 142
+    value_type: U_WORD
+    optionsmap:
+      "Selling First": 0
+      "Zero Export to Load": 1
+      "Zero Export to CT": 2
+    entity_category: config
+    icon: "mdi:solar-power"
+
   - platform: template
     name: BatteryMode
     id: batterymode
@@ -1411,7 +1425,11 @@ sensor:
                        !id(charge_throttle_active);
             then:
               - lambda: |-
-                  id(helper_charge_current_before_throttle) = (int)id(${device_type}_Maximum_battery_charge_current).state;
+                  int current_val = (int)id(${device_type}_Maximum_battery_charge_current).state;
+                  // Only save if the value isn't our throttle value (avoid saving corrupted state)
+                  if (current_val > (int)id(soc_throttle_charge_current).state) {
+                    id(helper_charge_current_before_throttle) = current_val;
+                  }
                   id(charge_throttle_active) = true;
                   ESP_LOGI("SoC Throttle", "SoC >= %.0f%% - throttling charge current to %.0fA (was %dA)",
                     id(soc_throttle_threshold).state, id(soc_throttle_charge_current).state, id(helper_charge_current_before_throttle));
@@ -1429,7 +1447,7 @@ sensor:
             condition:
               lambda: |-
                 return id(soc_charge_throttle_enabled).state &&
-                       id(${device_type}_battery_capacity).state < id(soc_throttle_threshold).state &&
+                       id(${device_type}_battery_capacity).state < (id(soc_throttle_threshold).state - 3.0) &&
                        id(charge_throttle_active);
             then:
               - lambda: |-
