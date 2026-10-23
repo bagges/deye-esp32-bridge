@@ -31,8 +31,11 @@ substitutions:
   device_type: sun10k
   device_description: "Esphome component for Deye sun-10k-sg04lp3"
   modbus_controller_id: sg04lp3
-  # pinned: upstream @main requires ESPHome 2026.1.0; this commit is the last one compatible with Device Builder 10.0 (ESPHome 2025.10)
-  external_components_source: github://syssi/esphome-seplos-bms@33fa70b8bce3af621e241dc4e31a2b283f28e9d8
+  # Pinned to a fixed release tag (not @main) so the config keeps validating
+  # on older ESPHome cores such as Device Builder 10.0 (ESPHome 2025.7.x).
+  # @main raises its minimum ESPHome requirement over time; bump this
+  # deliberately after testing against a newer release.
+  external_components_source: github://syssi/esphome-seplos-bms@1.6.0
   
 api:
 
